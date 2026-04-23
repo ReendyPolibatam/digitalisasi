@@ -1,8 +1,12 @@
-<h2>Daftar Dokumen</h2>
+<h2>Verifikasi Dokumen</h2>
 
-<a href="{{ route('documents.create') }}">Upload Dokumen</a>
+@if(session('success'))
+    <p style="color: green;">{{ session('success') }}</p>
+@endif
 
-<br><br>
+@if(session('error'))
+    <p style="color: red;">{{ session('error') }}</p>
+@endif
 
 <table border="1" cellpadding="8">
     <tr>
@@ -33,9 +37,13 @@
         </td>
 
         <td>
-            <a href="{{ route('documents.download', $doc->id) }}">
-                Download
-            </a>
+            @if($doc->status == 'pending')
+                <a href="{{ route('documents.approve', $doc->id) }}">Approve</a>
+                |
+                <a href="{{ route('documents.reject', $doc->id) }}">Reject</a>
+            @else
+                <span>Tidak ada aksi</span>
+            @endif
         </td>
     </tr>
     @empty

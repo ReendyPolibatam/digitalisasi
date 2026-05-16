@@ -1,46 +1,65 @@
-<h2>Daftar Dokumen</h2>
+@extends('layouts.app')
 
-<a href="{{ route('documents.create') }}">Upload Dokumen</a>
+@section('content')
 
-<br><br>
+<div class="bg-white p-6 rounded-lg shadow">
 
-<table border="1" cellpadding="8">
-    <tr>
-        <th>Nama File</th>
-        <th>Preview</th>
-        <th>Status</th>
-        <th>Aksi</th>
-    </tr>
+    <div class="flex justify-between mb-6">
+        <h2 class="text-2xl font-bold">
+            Daftar Dokumen
+        </h2>
 
-    @forelse($documents as $doc)
-    <tr>
-        <td>{{ $doc->file_name }}</td>
+        <a href="{{ route('documents.create') }}"
+           class="bg-blue-600 text-white px-4 py-2 rounded">
+            Upload Dokumen
+        </a>
+    </div>
 
-        <td>
-            <a href="{{ asset('storage/' . $doc->file_path) }}" target="_blank">
-                Lihat
-            </a>
-        </td>
+    @if(session('success'))
+        <div class="bg-green-100 text-green-700 p-3 rounded mb-4">
+            {{ session('success') }}
+        </div>
+    @endif
 
-        <td>
-            @if($doc->status == 'pending')
-                <span style="color: orange;">Pending</span>
-            @elseif($doc->status == 'approved')
-                <span style="color: green;">Approved</span>
-            @elseif($doc->status == 'rejected')
-                <span style="color: red;">Rejected</span>
-            @endif
-        </td>
+    <table class="w-full border">
+        <thead class="bg-gray-200">
+            <tr>
+                <th class="p-3 border">Nama File</th>
+                <th class="p-3 border">Status</th>
+                <th class="p-3 border">Aksi</th>
+            </tr>
+        </thead>
 
-        <td>
-            <a href="{{ route('documents.download', $doc->id) }}">
-                Download
-            </a>
-        </td>
-    </tr>
-    @empty
-    <tr>
-        <td colspan="4">Belum ada dokumen</td>
-    </tr>
-    @endforelse
-</table>
+        <tbody>
+            @foreach($documents as $doc)
+            <tr>
+                <td class="p-3 border">
+                    {{ $doc->file_name }}
+                </td>
+
+                <td class="p-3 border">
+                    {{ $doc->status }}
+                </td>
+
+                <td class="p-3 border flex gap-2">
+
+                    <a href="{{ asset('storage/' . $doc->file_path) }}"
+                       target="_blank"
+                       class="bg-green-500 text-white px-3 py-1 rounded">
+                        Preview
+                    </a>
+
+                    <a href="{{ route('documents.download', $doc->id) }}"
+                       class="bg-blue-500 text-white px-3 py-1 rounded">
+                        Download
+                    </a>
+
+                </td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+
+</div>
+
+@endsection

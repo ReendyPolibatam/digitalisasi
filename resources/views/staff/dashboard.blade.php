@@ -1,100 +1,161 @@
-@extends('layouts.app')
+@extends('layouts.staff')
 
 @section('content')
 
-<div>
+<div class="mb-8">
 
-    <!-- Header -->
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-800">
-            Dashboard Staff
-        </h1>
+    <h1 class="text-3xl font-bold text-gray-800">
+        Dashboard Staff
+    </h1>
 
-        <p class="text-gray-500 mt-2">
-            Kelola dokumen shipping dan upload dokumen dengan mudah.
-        </p>
+    <p class="text-gray-500 mt-2">
+        Selamat datang, {{ Auth::user()->name }}
+    </p>
+
+</div>
+
+<!-- Statistik -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+
+    <div class="bg-white rounded-xl shadow p-6">
+        <p class="text-gray-500">Total Dokumen</p>
+        <h2 class="text-3xl font-bold text-blue-600">
+            {{ $total ?? 0 }}
+        </h2>
     </div>
 
-    <!-- Welcome Card -->
-    <div class="bg-gradient-to-r from-blue-600 to-blue-500 rounded-2xl shadow-lg p-8 text-white mb-8">
-
-        <div class="flex items-center justify-between">
-
-            <div>
-                <h2 class="text-3xl font-bold mb-2">
-                    Selamat Datang, {{ Auth::user()->name }} 👋
-                </h2>
-
-                <p class="text-blue-100">
-                    Sistem digitalisasi dokumen shipping berbasis OCR.
-                </p>
-            </div>
-
-            <div class="hidden md:block text-6xl">
-                📄
-            </div>
-
-        </div>
-
+    <div class="bg-white rounded-xl shadow p-6">
+        <p class="text-gray-500">Pending</p>
+        <h2 class="text-3xl font-bold text-yellow-500">
+            {{ $pending ?? 0 }}
+        </h2>
     </div>
 
-    <!-- Menu Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="bg-white rounded-xl shadow p-6">
+        <p class="text-gray-500">Approved</p>
+        <h2 class="text-3xl font-bold text-green-500">
+            {{ $approved ?? 0 }}
+        </h2>
+    </div>
 
-        <!-- Upload Card -->
-        <a href="{{ route('documents.create') }}"
-           class="bg-white rounded-2xl p-6 shadow hover:shadow-2xl transition duration-300 border border-gray-100 hover:border-blue-500 group">
-
-            <div class="flex items-center justify-between mb-4">
-
-                <div class="bg-blue-100 text-blue-600 w-16 h-16 rounded-2xl flex items-center justify-center text-3xl group-hover:scale-110 transition">
-                    📤
-                </div>
-
-                <span class="text-blue-500 font-semibold">
-                    Upload
-                </span>
-
-            </div>
-
-            <h3 class="text-2xl font-bold text-gray-800 mb-2">
-                Upload Dokumen
-            </h3>
-
-            <p class="text-gray-500">
-                Upload dokumen shipping untuk diproses OCR dan disimpan ke sistem.
-            </p>
-
-        </a>
-
-        <!-- Documents Card -->
-        <a href="{{ route('documents.index') }}"
-           class="bg-white rounded-2xl p-6 shadow hover:shadow-2xl transition duration-300 border border-gray-100 hover:border-green-500 group">
-
-            <div class="flex items-center justify-between mb-4">
-
-                <div class="bg-green-100 text-green-600 w-16 h-16 rounded-2xl flex items-center justify-center text-3xl group-hover:scale-110 transition">
-                    📁
-                </div>
-
-                <span class="text-green-500 font-semibold">
-                    Dokumen
-                </span>
-
-            </div>
-
-            <h3 class="text-2xl font-bold text-gray-800 mb-2">
-                Dokumen Saya
-            </h3>
-
-            <p class="text-gray-500">
-                Lihat daftar dokumen yang telah diupload beserta status proses OCR.
-            </p>
-
-        </a>
-
+    <div class="bg-white rounded-xl shadow p-6">
+        <p class="text-gray-500">Rejected</p>
+        <h2 class="text-3xl font-bold text-red-500">
+            {{ $rejected ?? 0 }}
+        </h2>
     </div>
 
 </div>
+
+<!-- Grafik -->
+<div class="bg-white rounded-xl shadow p-6 mb-8">
+
+    <div class="mb-4">
+        <h2 class="text-xl font-bold">
+            Aktivitas Dokumen
+        </h2>
+
+        <p class="text-gray-500 text-sm">
+            Statistik upload dokumen per bulan
+        </p>
+    </div>
+
+    <canvas id="documentChart" height="100"></canvas>
+
+</div>
+
+<!-- Dokumen Terbaru -->
+<div class="bg-white rounded-xl shadow p-6">
+
+    <h2 class="text-xl font-bold mb-4">
+        Dokumen Terbaru
+    </h2>
+
+    <table class="w-full">
+
+        <thead>
+            <tr class="border-b">
+                <th class="text-left py-3">Nama File</th>
+                <th class="text-left py-3">Status</th>
+                <th class="text-left py-3">Tanggal</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            @forelse($documents as $doc)
+
+            <tr class="border-b">
+
+                <td class="py-3">
+                    {{ $doc->file_name }}
+                </td>
+
+                <td class="py-3">
+
+                    @if($doc->status == 'approved')
+                        <span class="text-green-600 font-semibold">
+                            Approved
+                        </span>
+                    @elseif($doc->status == 'rejected')
+                        <span class="text-red-600 font-semibold">
+                            Rejected
+                        </span>
+                    @else
+                        <span class="text-yellow-500 font-semibold">
+                            Pending
+                        </span>
+                    @endif
+
+                </td>
+
+                <td class="py-3">
+                    {{ $doc->created_at->format('d M Y') }}
+                </td>
+
+            </tr>
+
+            @empty
+
+            <tr>
+                <td colspan="3" class="py-4 text-center text-gray-500">
+                    Belum ada dokumen
+                </td>
+            </tr>
+
+            @endforelse
+
+        </tbody>
+
+    </table>
+
+</div>
+
+<!-- ChartJS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const ctx = document.getElementById('documentChart');
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: [
+            'Jan','Feb','Mar','Apr','Mei','Jun',
+            'Jul','Agu','Sep','Okt','Nov','Des'
+        ],
+
+        datasets: [{
+            label: 'Upload Dokumen',
+            data: @json($monthlyData),
+            borderWidth: 3,
+            tension: 0.4,
+            fill: true
+        }]
+    }
+});
+</script>
 
 @endsection

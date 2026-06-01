@@ -11,14 +11,14 @@
         </h1>
 
         <p class="text-gray-500 mt-2">
-            Verifikasi dokumen OCR dan kelola data dokumen shipping.
+            Verifikasi dokumen OCR dan monitoring dokumen shipping.
         </p>
     </div>
 
-    <!-- Welcome Card -->
+    <!-- Welcome -->
     <div class="bg-gradient-to-r from-indigo-600 to-blue-500 rounded-2xl shadow-lg p-8 text-white mb-8">
 
-        <div class="flex items-center justify-between">
+        <div class="flex justify-between items-center">
 
             <div>
                 <h2 class="text-3xl font-bold mb-2">
@@ -26,7 +26,7 @@
                 </h2>
 
                 <p class="text-blue-100">
-                    Dashboard approver untuk verifikasi dokumen hasil OCR.
+                    Dashboard administrator sistem digitalisasi dokumen.
                 </p>
             </div>
 
@@ -39,45 +39,34 @@
     </div>
 
     <!-- Statistik -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
 
-        <!-- Pending -->
+        <div class="bg-white rounded-2xl shadow p-6 border-l-4 border-blue-500">
+            <p class="text-gray-500 mb-2">Total Dokumen</p>
+            <h2 class="text-4xl font-bold text-blue-500">
+                {{ $total }}
+            </h2>
+        </div>
+
         <div class="bg-white rounded-2xl shadow p-6 border-l-4 border-yellow-400">
-
-            <p class="text-gray-500 mb-2">
-                Pending Verifikasi
-            </p>
-
+            <p class="text-gray-500 mb-2">Pending</p>
             <h2 class="text-4xl font-bold text-yellow-500">
-                12
+                {{ $pending }}
             </h2>
-
         </div>
 
-        <!-- Approved -->
         <div class="bg-white rounded-2xl shadow p-6 border-l-4 border-green-500">
-
-            <p class="text-gray-500 mb-2">
-                Dokumen Approved
-            </p>
-
+            <p class="text-gray-500 mb-2">Approved</p>
             <h2 class="text-4xl font-bold text-green-500">
-                48
+                {{ $approved }}
             </h2>
-
         </div>
 
-        <!-- Rejected -->
         <div class="bg-white rounded-2xl shadow p-6 border-l-4 border-red-500">
-
-            <p class="text-gray-500 mb-2">
-                Dokumen Rejected
-            </p>
-
+            <p class="text-gray-500 mb-2">Rejected</p>
             <h2 class="text-4xl font-bold text-red-500">
-                5
+                {{ $rejected }}
             </h2>
-
         </div>
 
     </div>
@@ -86,19 +75,11 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         <!-- Verifikasi -->
-        <a href="{{ route('documents.index') }}"
-           class="bg-white rounded-2xl p-6 shadow hover:shadow-2xl transition duration-300 border border-gray-100 hover:border-blue-500 group">
+        <a href="{{ route('admin.documents') }}"
+           class="bg-white rounded-2xl p-6 shadow hover:shadow-xl transition border hover:border-blue-500">
 
-            <div class="flex items-center justify-between mb-4">
-
-                <div class="bg-blue-100 text-blue-600 w-16 h-16 rounded-2xl flex items-center justify-center text-3xl group-hover:scale-110 transition">
-                    ✅
-                </div>
-
-                <span class="text-blue-500 font-semibold">
-                    Verifikasi
-                </span>
-
+            <div class="text-5xl mb-4">
+                ✅
             </div>
 
             <h3 class="text-2xl font-bold text-gray-800 mb-2">
@@ -106,25 +87,17 @@
             </h3>
 
             <p class="text-gray-500">
-                Lihat dan verifikasi hasil OCR dokumen shipping staff.
+                Approve atau reject dokumen yang diupload staff.
             </p>
 
         </a>
 
         <!-- Monitoring -->
-        <a href="#"
-           class="bg-white rounded-2xl p-6 shadow hover:shadow-2xl transition duration-300 border border-gray-100 hover:border-indigo-500 group">
+        <a href="{{ route('admin.monitoring') }}"
+           class="bg-white rounded-2xl p-6 shadow hover:shadow-xl transition border hover:border-indigo-500">
 
-            <div class="flex items-center justify-between mb-4">
-
-                <div class="bg-indigo-100 text-indigo-600 w-16 h-16 rounded-2xl flex items-center justify-center text-3xl group-hover:scale-110 transition">
-                    📊
-                </div>
-
-                <span class="text-indigo-500 font-semibold">
-                    Monitoring
-                </span>
-
+            <div class="text-5xl mb-4">
+                📊
             </div>
 
             <h3 class="text-2xl font-bold text-gray-800 mb-2">
@@ -132,7 +105,7 @@
             </h3>
 
             <p class="text-gray-500">
-                Pantau status seluruh dokumen dalam sistem digitalisasi.
+                Pantau seluruh aktivitas dokumen dalam sistem.
             </p>
 
         </a>

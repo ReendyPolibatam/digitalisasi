@@ -12,7 +12,7 @@ use Illuminate\View\View;
 class AuthenticatedSessionController extends Controller
 {
     /**
-     * Display the login view.
+     * Display login form.
      */
     public function create(): View
     {
@@ -20,23 +20,34 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * Handle an incoming authentication request.
+     * Handle login.
      */
-        public function store(LoginRequest $request): RedirectResponse
-    {
-        $request->authenticate();
+    public function store(LoginRequest $request): RedirectResponse
+{
+    $request->authenticate();
 
-        $request->session()->regenerate();
+    $request->session()->regenerate();
 
-        if (auth()->user()->role === 'admin') {
-            return redirect()->route('admin.dashboard');
-        } else {
-            return redirect()->route('staff.dashboard');
-        }
+    $user = Auth::user();
+
+    if (strtolower($user->role) === 'admin') {
+        return redirect('/admin');
     }
 
+    if (strtolower($user->role) === 'staff') {
+        return redirect('/staff');
+    }
+
+    Auth::logout();
+
+    return redirect('/login')
+        ->withErrors([
+            'email' => 'Role tidak valid.'
+        ]);
+}
+
     /**
-     * Destroy an authenticated session.
+     * Logout.
      */
     public function destroy(Request $request): RedirectResponse
     {

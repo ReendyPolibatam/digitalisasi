@@ -1,117 +1,161 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('content')
 
-<div>
+<div class="mb-8">
 
-    <!-- Header -->
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-800">
-            Dashboard Admin
-        </h1>
+    <h1 class="text-3xl font-bold text-gray-800">
+        Dashboard Admin
+    </h1>
 
-        <p class="text-gray-500 mt-2">
-            Verifikasi dokumen OCR dan monitoring dokumen shipping.
-        </p>
+    <p class="text-gray-500 mt-2">
+        Selamat datang, {{ Auth::user()->name }}
+    </p>
+
+</div>
+
+<!-- Statistik -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+
+    <div class="bg-white rounded-xl shadow p-6">
+        <p class="text-gray-500">Total Dokumen</p>
+        <h2 class="text-3xl font-bold text-blue-600">
+            {{ $total ?? 0 }}
+        </h2>
     </div>
 
-    <!-- Welcome -->
-    <div class="bg-gradient-to-r from-indigo-600 to-blue-500 rounded-2xl shadow-lg p-8 text-white mb-8">
-
-        <div class="flex justify-between items-center">
-
-            <div>
-                <h2 class="text-3xl font-bold mb-2">
-                    Selamat Datang, {{ Auth::user()->name }} 👋
-                </h2>
-
-                <p class="text-blue-100">
-                    Dashboard administrator sistem digitalisasi dokumen.
-                </p>
-            </div>
-
-            <div class="hidden md:block text-6xl">
-                🛡️
-            </div>
-
-        </div>
-
+    <div class="bg-white rounded-xl shadow p-6">
+        <p class="text-gray-500">Pending</p>
+        <h2 class="text-3xl font-bold text-yellow-500">
+            {{ $pending ?? 0 }}
+        </h2>
     </div>
 
-    <!-- Statistik -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-
-        <div class="bg-white rounded-2xl shadow p-6 border-l-4 border-blue-500">
-            <p class="text-gray-500 mb-2">Total Dokumen</p>
-            <h2 class="text-4xl font-bold text-blue-500">
-                {{ $total }}
-            </h2>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow p-6 border-l-4 border-yellow-400">
-            <p class="text-gray-500 mb-2">Pending</p>
-            <h2 class="text-4xl font-bold text-yellow-500">
-                {{ $pending }}
-            </h2>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow p-6 border-l-4 border-green-500">
-            <p class="text-gray-500 mb-2">Approved</p>
-            <h2 class="text-4xl font-bold text-green-500">
-                {{ $approved }}
-            </h2>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow p-6 border-l-4 border-red-500">
-            <p class="text-gray-500 mb-2">Rejected</p>
-            <h2 class="text-4xl font-bold text-red-500">
-                {{ $rejected }}
-            </h2>
-        </div>
-
+    <div class="bg-white rounded-xl shadow p-6">
+        <p class="text-gray-500">Approved</p>
+        <h2 class="text-3xl font-bold text-green-500">
+            {{ $approved ?? 0 }}
+        </h2>
     </div>
 
-    <!-- Menu -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-        <!-- Verifikasi -->
-        <a href="{{ route('admin.documents') }}"
-           class="bg-white rounded-2xl p-6 shadow hover:shadow-xl transition border hover:border-blue-500">
-
-            <div class="text-5xl mb-4">
-                ✅
-            </div>
-
-            <h3 class="text-2xl font-bold text-gray-800 mb-2">
-                Verifikasi Dokumen
-            </h3>
-
-            <p class="text-gray-500">
-                Approve atau reject dokumen yang diupload staff.
-            </p>
-
-        </a>
-
-        <!-- Monitoring -->
-        <a href="{{ route('admin.monitoring') }}"
-           class="bg-white rounded-2xl p-6 shadow hover:shadow-xl transition border hover:border-indigo-500">
-
-            <div class="text-5xl mb-4">
-                📊
-            </div>
-
-            <h3 class="text-2xl font-bold text-gray-800 mb-2">
-                Monitoring Dokumen
-            </h3>
-
-            <p class="text-gray-500">
-                Pantau seluruh aktivitas dokumen dalam sistem.
-            </p>
-
-        </a>
-
+    <div class="bg-white rounded-xl shadow p-6">
+        <p class="text-gray-500">Rejected</p>
+        <h2 class="text-3xl font-bold text-red-500">
+            {{ $rejected ?? 0 }}
+        </h2>
     </div>
 
 </div>
+
+<!-- Grafik -->
+<div class="bg-white rounded-xl shadow p-6 mb-8">
+
+    <div class="mb-4">
+        <h2 class="text-xl font-bold">
+            Aktivitas Dokumen
+        </h2>
+
+        <p class="text-gray-500 text-sm">
+            Statistik upload dokumen per bulan
+        </p>
+    </div>
+
+    <canvas id="documentChart" height="100"></canvas>
+
+</div>
+
+<!-- Dokumen Terbaru -->
+<div class="bg-white rounded-xl shadow p-6">
+
+    <h2 class="text-xl font-bold mb-4">
+        Dokumen Terbaru
+    </h2>
+
+    <table class="w-full">
+
+        <thead>
+            <tr class="border-b">
+                <th class="text-left py-3">Nama File</th>
+                <th class="text-left py-3">Status</th>
+                <th class="text-left py-3">Tanggal</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            @forelse($documents as $doc)
+
+            <tr class="border-b">
+
+                <td class="py-3">
+                    {{ $doc->file_name }}
+                </td>
+
+                <td class="py-3">
+
+                    @if($doc->status == 'approved')
+                        <span class="text-green-600 font-semibold">
+                            Approved
+                        </span>
+                    @elseif($doc->status == 'rejected')
+                        <span class="text-red-600 font-semibold">
+                            Rejected
+                        </span>
+                    @else
+                        <span class="text-yellow-500 font-semibold">
+                            Pending
+                        </span>
+                    @endif
+
+                </td>
+
+                <td class="py-3">
+                    {{ $doc->created_at->format('d M Y') }}
+                </td>
+
+            </tr>
+
+            @empty
+
+            <tr>
+                <td colspan="3" class="py-4 text-center text-gray-500">
+                    Belum ada dokumen
+                </td>
+            </tr>
+
+            @endforelse
+
+        </tbody>
+
+    </table>
+
+</div>
+
+<!-- ChartJS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const ctx = document.getElementById('documentChart');
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: [
+            'Jan','Feb','Mar','Apr','Mei','Jun',
+            'Jul','Agu','Sep','Okt','Nov','Des'
+        ],
+
+        datasets: [{
+            label: 'Upload Dokumen',
+            data: @json($monthlyData),
+            borderWidth: 3,
+            tension: 0.4,
+            fill: true
+        }]
+    }
+});
+</script>
 
 @endsection

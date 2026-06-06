@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staff Panel</title>
+    <title>Admin Panel</title>
 
     @vite(['resources/css/app.css','resources/js/app.js'])
 </head>
@@ -23,44 +23,56 @@
             </h1>
 
             <p class="text-sm text-slate-400 mt-1">
-                Staff Panel
+                Admin Panel
             </p>
 
         </div>
 
-        <!-- Menu -->
+        <!-- MENU -->
         <nav class="flex-1 p-4 space-y-2">
 
-            <a href="{{ route('staff.dashboard') }}"
-               class="block px-4 py-3 rounded-lg transition hover:bg-slate-800 {{ request()->routeIs('staff.dashboard') ? 'bg-blue-600' : '' }}">
+            <a href="{{ route('admin.dashboard') }}"
+               class="block px-4 py-3 rounded-lg transition hover:bg-slate-800
+               {{ request()->routeIs('admin.dashboard') ? 'bg-blue-600' : '' }}">
 
                 📊 Dashboard
 
             </a>
 
-            <a href="{{ route('documents.create') }}"
-               class="block px-4 py-3 rounded-lg transition hover:bg-slate-800 {{ request()->routeIs('documents.create') ? 'bg-blue-600' : '' }}">
+            <a href="{{ route('admin.documents') }}"
+               class="block px-4 py-3 rounded-lg transition hover:bg-slate-800
+               {{ request()->routeIs('admin.documents') ? 'bg-blue-600' : '' }}">
 
-                ⬆️ Upload Dokumen
+                📄 Verifikasi Dokumen
 
             </a>
 
-            <a href="{{ route('documents.index') }}"
-               class="block px-4 py-3 rounded-lg transition hover:bg-slate-800 {{ request()->routeIs('documents.index') ? 'bg-blue-600' : '' }}">
+            <a href="{{ route('admin.library') }}"
+            class="block px-4 py-3 rounded-lg transition hover:bg-slate-800
+            {{ request()->routeIs('admin.library') ? 'bg-blue-600' : '' }}">
 
-                📄 Dokumen Saya
+                📚 Library Dokumen
+
+            </a>
+
+            <a href="{{ route('admin.monitoring') }}"
+               class="block px-4 py-3 rounded-lg transition hover:bg-slate-800
+               {{ request()->routeIs('admin.monitoring') ? 'bg-blue-600' : '' }}">
+
+                📋 Monitoring
 
             </a>
 
         </nav>
 
-        <!-- Logout -->
+        <!-- LOGOUT -->
         <div class="p-4 border-t border-slate-700">
 
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
 
                 <button
+                    type="submit"
                     class="w-full bg-red-500 hover:bg-red-600 py-3 rounded-lg transition">
 
                     Logout
@@ -79,13 +91,14 @@
         <!-- TOPBAR -->
         <header class="bg-white shadow-sm px-8 py-4 flex justify-between items-center">
 
-            <!-- Search -->
+            <!-- SEARCH -->
             <div class="w-96 relative">
 
                 <input
                     type="text"
                     placeholder="Search document..."
-                    class="w-full border border-gray-300 rounded-lg px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2 pr-10
+                           focus:outline-none focus:ring-2 focus:ring-blue-500">
 
                 <span class="absolute right-3 top-2.5 text-gray-400">
                     🔍
@@ -93,7 +106,7 @@
 
             </div>
 
-            <!-- User -->
+            <!-- USER INFO -->
             <div class="flex items-center gap-4">
 
                 <div class="text-right">
@@ -103,7 +116,7 @@
                     </h3>
 
                     <p class="text-sm text-gray-500">
-                        Staff
+                        Administrator
                     </p>
 
                 </div>
@@ -119,7 +132,7 @@
 
         </header>
 
-        <!-- Alert Success -->
+        <!-- SUCCESS ALERT -->
         @if(session('success'))
 
             <div
@@ -132,7 +145,7 @@
 
         @endif
 
-        <!-- Alert Error -->
+        <!-- ERROR ALERT -->
         @if(session('error'))
 
             <div
@@ -145,7 +158,7 @@
 
         @endif
 
-        <!-- Content -->
+        <!-- PAGE CONTENT -->
         <section class="flex-1 p-8">
 
             @yield('content')
@@ -160,7 +173,7 @@
 
 document.addEventListener('DOMContentLoaded', function () {
 
-    setTimeout(function () {
+    setTimeout(() => {
 
         const success = document.getElementById('successAlert');
         const error = document.getElementById('errorAlert');
@@ -185,4 +198,3 @@ document.addEventListener('DOMContentLoaded', function () {
 
 </body>
 </html>
-```

@@ -38,11 +38,9 @@ class DocumentController extends Controller
             ->take(5)
             ->get();
 
-        // Grafik upload dokumen per bulan
         $monthlyData = [];
 
         for ($month = 1; $month <= 12; $month++) {
-
             $monthlyData[] = Document::where('user_id', $userId)
                 ->whereYear('created_at', now()->year)
                 ->whereMonth('created_at', $month)
@@ -59,23 +57,23 @@ class DocumentController extends Controller
         ));
     }
 
-    // Daftar dokumen milik staff
+    // Dokumen Saya
     public function index()
     {
         $documents = Document::where('user_id', Auth::id())
             ->latest()
             ->paginate(10);
 
-        return view('documents.index', compact('documents'));
+        return view('staff.documents', compact('documents'));
     }
 
-    // Form upload
+    // Halaman Upload
     public function create()
     {
-        return view('documents.create');
+        return view('staff.upload');
     }
 
-    // Simpan dokumen
+    // Simpan Dokumen
     public function store(Request $request)
     {
         $request->validate([
@@ -95,22 +93,27 @@ class DocumentController extends Controller
 
         return redirect()
             ->route('staff.dashboard')
-            ->with('success', 'Dokumen berhasil diupload');
+            ->with(
+                'success',
+                'Dokumen berhasil diupload'
+            );
     }
 
-    // Download dokumen
+    // Download Dokumen
     public function download($id)
     {
         $doc = Document::findOrFail($id);
 
         if (
-            Auth::user()->role === 'staff' &&
-            $doc->user_id !== Auth::id()
+            Auth::user()->role == 'staff' &&
+            $doc->user_id != Auth::id()
         ) {
             abort(403);
         }
 
-        $path = storage_path('app/public/' . $doc->file_path);
+        $path = storage_path(
+            'app/public/' . $doc->file_path
+        );
 
         if (!file_exists($path)) {
             return back()->with(
@@ -136,32 +139,91 @@ class DocumentController extends Controller
     {
         $total = Document::count();
 
-        $pending = Document::where('status', 'pending')->count();
+        $pending = Document::where(
+            'status',
+            'pending'
+        )->count();
 
-        $approved = Document::where('status', 'approved')->count();
+        $approved = Document::where(
+            'status',
+            'approved'
+        )->count();
 
-        $rejected = Document::where('status', 'rejected')->count();
+        $rejected = Document::where(
+            'status',
+            'rejected'
+        )->count();
 
-        $latestDocuments = Document::latest()
+        $documents = Document::latest()
             ->take(5)
             ->get();
 
-        return view('admin.dashboard', compact(
-            'total',
-            'pending',
-            'approved',
-            'rejected',
-            'latestDocuments'
-        ));
+        $monthlyData = [];
+
+        for ($month = 1; $month <= 12; $month++) {
+
+            $monthlyData[] = Document::whereYear(
+                'created_at',
+                now()->year
+            )
+            ->whereMonth(
+                'created_at',
+                $month
+            )
+            ->count();
+        }
+
+        return view(
+            'admin.dashboard',
+            compact(
+                'total',
+                'pending',
+                'approved',
+                'rejected',
+                'documents',
+                'monthlyData'
+            )
+        );
     }
 
-    // Halaman Verifikasi
+    // Verifikasi Dokumen
     public function adminIndex()
     {
         $documents = Document::latest()
             ->paginate(10);
 
-        return view('admin.documents', compact('documents'));
+        return view(
+            'admin.documents',
+            compact('documents')
+        );
+    }
+
+    // Library Dokumen
+    public function library()
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | Sementara masih dummy
+        | Nanti diganti menjadi hasil OCR + Rule Based
+        |--------------------------------------------------------------------------
+        */
+
+        $ships = collect([
+            (object)[
+                'ship_name' => 'MT RISKITA'
+            ],
+            (object)[
+                'ship_name' => 'MT MERATUS'
+            ],
+            (object)[
+                'ship_name' => 'SPOB ANUGERAH'
+            ]
+        ]);
+
+        return view(
+            'admin.library',
+            compact('ships')
+        );
     }
 
     // Approve Dokumen
@@ -169,21 +231,25 @@ class DocumentController extends Controller
     {
         $doc = Document::findOrFail($id);
 
-        if ($doc->status !== 'pending') {
-            return back()->with(
-                'error',
-                'Dokumen sudah diproses'
-            );
+        if ($doc->status != 'pending') {
+            return redirect()
+                ->route('admin.documents')
+                ->with(
+                    'error',
+                    'Dokumen sudah diproses'
+                );
         }
 
         $doc->update([
             'status' => 'approved'
         ]);
 
-        return back()->with(
-            'success',
-            'Dokumen berhasil di-approve'
-        );
+        return redirect()
+            ->route('admin.documents')
+            ->with(
+                'success',
+                'Dokumen berhasil di-approve'
+            );
     }
 
     // Reject Dokumen
@@ -191,24 +257,28 @@ class DocumentController extends Controller
     {
         $doc = Document::findOrFail($id);
 
-        if ($doc->status !== 'pending') {
-            return back()->with(
-                'error',
-                'Dokumen sudah diproses'
-            );
+        if ($doc->status != 'pending') {
+            return redirect()
+                ->route('admin.documents')
+                ->with(
+                    'error',
+                    'Dokumen sudah diproses'
+                );
         }
 
         $doc->update([
             'status' => 'rejected'
         ]);
 
-        return back()->with(
-            'success',
-            'Dokumen berhasil di-reject'
-        );
+        return redirect()
+            ->route('admin.documents')
+            ->with(
+                'success',
+                'Dokumen berhasil di-reject'
+            );
     }
 
-    // Monitoring Admin
+    // Monitoring
     public function monitoring()
     {
         $documents = Document::latest()

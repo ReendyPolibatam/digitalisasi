@@ -6,111 +6,137 @@ use App\Http\Controllers\DocumentController;
 
 /*
 |--------------------------------------------------------------------------
-| WEB ROUTES
+| LANDING PAGE
 |--------------------------------------------------------------------------
 */
 
-// ======================================
-// LANDING PAGE
-// ======================================
 Route::get('/', function () {
+
+    if (auth()->check()) {
+
+        if (auth()->user()->role == 'admin') {
+            return redirect()->route('admin.dashboard');
+        }
+
+        return redirect()->route('staff.dashboard');
+    }
+
     return view('welcome');
 });
 
 
-// ======================================
-// OVERVIEW DASHBOARD (GLOBAL)
-// ======================================
-Route::middleware(['auth', 'verified'])->group(function () {
+/*
+|--------------------------------------------------------------------------
+| STAFF
+|--------------------------------------------------------------------------
+*/
 
-    Route::get('/overview', function () {
-        return view('dashboard');
-    })->name('overview');
-
-});
-
-
-// ======================================
-// STAFF ROUTES
-// ======================================
 Route::middleware(['auth', 'role:staff'])->group(function () {
 
-    // STAFF DASHBOARD
-    Route::get('/staff',
-    [DocumentController::class, 'staffDashboard']
+    // Dashboard
+    Route::get(
+        '/staff',
+        [DocumentController::class, 'staffDashboard']
     )->name('staff.dashboard');
 
-    // DOCUMENTS
-    Route::resource('documents', DocumentController::class)->only([
+    // Upload & Dokumen Saya
+    Route::resource(
+        'documents',
+        DocumentController::class
+    )->only([
         'index',
         'create',
         'store'
     ]);
 
-    // DOWNLOAD DOCUMENT
-    Route::get('/documents/{id}/download',
-        [DocumentController::class, 'download']
-    )->name('documents.download');
+    // Download
+    Route::get(
+        '/documents/{id}/download',
+        [DocumentController::class, 'download'
+    ])->name('documents.download');
 
 });
 
 
-// ======================================
-// ADMIN ROUTES
-// ======================================
+/*
+|--------------------------------------------------------------------------
+| ADMIN
+|--------------------------------------------------------------------------
+*/
+
 Route::middleware(['auth', 'role:admin'])
     ->prefix('admin')
     ->group(function () {
 
-    // DASHBOARD ADMIN
-    Route::get('/',
-        [DocumentController::class, 'adminDashboard']
-    )->name('admin.dashboard');
+        // Dashboard
+        Route::get(
+            '/',
+            [DocumentController::class, 'adminDashboard']
+        )->name('admin.dashboard');
 
-    // VERIFIKASI DOKUMEN
-    Route::get('/documents',
-        [DocumentController::class, 'adminIndex']
-    )->name('admin.documents');
+        // Verifikasi Dokumen
+        Route::get(
+            '/documents',
+            [DocumentController::class, 'adminIndex']
+        )->name('admin.documents');
 
-    // APPROVE
-    Route::get('/documents/{id}/approve',
-        [DocumentController::class, 'approve']
-    )->name('documents.approve');
+        // Library Dokumen
+        Route::get(
+            '/library',
+            [DocumentController::class, 'library']
+        )->name('admin.library');
 
-    // REJECT
-    Route::get('/documents/{id}/reject',
-        [DocumentController::class, 'reject']
-    )->name('documents.reject');
+        // Approve
+        Route::get(
+            '/documents/{id}/approve',
+            [DocumentController::class, 'approve']
+        )->name('documents.approve');
 
-    // MONITORING
-    Route::get('/monitoring',
-        [DocumentController::class, 'monitoring']
-    )->name('admin.monitoring');
+        // Reject
+        Route::get(
+            '/documents/{id}/reject',
+            [DocumentController::class, 'reject']
+        )->name('documents.reject');
+
+        // Monitoring
+        Route::get(
+            '/monitoring',
+            [DocumentController::class, 'monitoring']
+        )->name('admin.monitoring');
 
 });
 
 
-// ======================================
-// PROFILE ROUTES
-// ======================================
+/*
+|--------------------------------------------------------------------------
+| PROFILE
+|--------------------------------------------------------------------------
+*/
+
 Route::middleware('auth')->group(function () {
 
-    Route::get('/profile',
+    Route::get(
+        '/profile',
         [ProfileController::class, 'edit']
     )->name('profile.edit');
 
-    Route::patch('/profile',
+    Route::patch(
+        '/profile',
         [ProfileController::class, 'update']
     )->name('profile.update');
 
-    Route::delete('/profile',
+    Route::delete(
+        '/profile',
         [ProfileController::class, 'destroy']
     )->name('profile.destroy');
 
 });
 
 
-// ======================================
-// AUTH ROUTES
-// ======================================
+/*
+|--------------------------------------------------------------------------
+| AUTH
+|--------------------------------------------------------------------------
+*/
+
 require __DIR__.'/auth.php';

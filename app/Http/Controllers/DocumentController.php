@@ -41,6 +41,7 @@ class DocumentController extends Controller
         $monthlyData = [];
 
         for ($month = 1; $month <= 12; $month++) {
+
             $monthlyData[] = Document::where('user_id', $userId)
                 ->whereYear('created_at', now()->year)
                 ->whereMonth('created_at', $month)
@@ -105,7 +106,7 @@ class DocumentController extends Controller
         $doc = Document::findOrFail($id);
 
         if (
-            Auth::user()->role == 'staff' &&
+            Auth::user()->role === 'staff' &&
             $doc->user_id != Auth::id()
         ) {
             abort(403);
@@ -203,20 +204,26 @@ class DocumentController extends Controller
     {
         /*
         |--------------------------------------------------------------------------
-        | Sementara masih dummy
-        | Nanti diganti menjadi hasil OCR + Rule Based
+        | Dummy Data
+        | Nanti diganti hasil OCR + Rule Based
         |--------------------------------------------------------------------------
         */
 
         $ships = collect([
-            (object)[
-                'ship_name' => 'MT RISKITA'
+            (object) [
+                'ship_name' => 'MT RISKITA',
+                'voyage' => '010/RISKITA/PL/B40/V/2026',
+                'total_documents' => 3
             ],
-            (object)[
-                'ship_name' => 'MT MERATUS'
+            (object) [
+                'ship_name' => 'MT MERATUS',
+                'voyage' => '011/MERATUS/PL/B41/V/2026',
+                'total_documents' => 3
             ],
-            (object)[
-                'ship_name' => 'SPOB ANUGERAH'
+            (object) [
+                'ship_name' => 'SPOB ANUGERAH',
+                'voyage' => '012/ANUGERAH/PL/B42/V/2026',
+                'total_documents' => 3
             ]
         ]);
 
@@ -231,7 +238,8 @@ class DocumentController extends Controller
     {
         $doc = Document::findOrFail($id);
 
-        if ($doc->status != 'pending') {
+        if ($doc->status !== 'pending') {
+
             return redirect()
                 ->route('admin.documents')
                 ->with(
@@ -257,7 +265,8 @@ class DocumentController extends Controller
     {
         $doc = Document::findOrFail($id);
 
-        if ($doc->status != 'pending') {
+        if ($doc->status !== 'pending') {
+
             return redirect()
                 ->route('admin.documents')
                 ->with(
@@ -277,6 +286,16 @@ class DocumentController extends Controller
                 'Dokumen berhasil di-reject'
             );
     }
+
+    public function showDocument($id)
+{
+        $document = Document::findOrFail($id);
+
+        return view(
+            'admin.document-detail',
+            compact('document')
+        );
+}
 
     // Monitoring
     public function monitoring()

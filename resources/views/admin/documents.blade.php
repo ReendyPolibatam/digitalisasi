@@ -1,173 +1,147 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('content')
 
-<div class="bg-white p-6 rounded-2xl shadow">
+<div class="mb-8">
 
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold text-gray-800">
+        Verifikasi Dokumen
+    </h1>
 
-        <div>
-            <h2 class="text-2xl font-bold text-gray-800">
-                Verifikasi Dokumen
-            </h2>
+    <p class="text-gray-500 mt-2">
+        Kelola dan verifikasi dokumen yang diupload staff
+    </p>
 
-            <p class="text-gray-500 text-sm">
-                Approve atau reject dokumen yang diupload staff
-            </p>
-        </div>
+</div>
 
-    </div>
+<div class="bg-white rounded-xl shadow overflow-hidden">
 
-    <!-- Success Message -->
-    @if(session('success'))
-        <div class="bg-green-100 border border-green-300 text-green-700 p-4 rounded-lg mb-4">
-            {{ session('success') }}
-        </div>
-    @endif
+    <table class="w-full">
 
-    <!-- Error Message -->
-    @if(session('error'))
-        <div class="bg-red-100 border border-red-300 text-red-700 p-4 rounded-lg mb-4">
-            {{ session('error') }}
-        </div>
-    @endif
+        <thead class="bg-gray-50">
 
-    <!-- Table -->
-    <div class="overflow-x-auto">
+            <tr>
 
-        <table class="w-full border border-gray-200 rounded-lg overflow-hidden">
+                <th class="text-left px-6 py-4">
+                    Nama File
+                </th>
 
-            <thead class="bg-gray-100 text-gray-700">
-                <tr>
+                <th class="text-left px-6 py-4">
+                    Status
+                </th>
 
-                    <th class="p-4 text-left border-b">
-                        Nama File
-                    </th>
+                <th class="text-left px-6 py-4">
+                    Tanggal Upload
+                </th>
 
-                    <th class="p-4 text-left border-b">
-                        Status
-                    </th>
+                <th class="text-center px-6 py-4">
+                    Aksi
+                </th>
 
-                    <th class="p-4 text-left border-b">
-                        Upload
-                    </th>
+            </tr>
 
-                    <th class="p-4 text-center border-b">
-                        Preview
-                    </th>
+        </thead>
 
-                    <th class="p-4 text-center border-b">
-                        Aksi
-                    </th>
+        <tbody>
 
-                </tr>
-            </thead>
+        @forelse($documents as $doc)
 
-            <tbody>
+            <tr class="border-t hover:bg-gray-50">
 
-                @forelse($documents as $doc)
+                <td class="px-6 py-4">
 
-                <tr class="hover:bg-gray-50 transition">
+                    {{ $doc->file_name }}
 
-                    <!-- File Name -->
-                    <td class="p-4 border-b">
-                        {{ $doc->file_name }}
-                    </td>
+                </td>
 
-                    <!-- Status -->
-                    <td class="p-4 border-b">
+                <td class="px-6 py-4">
 
-                        @if($doc->status == 'pending')
+                    @if($doc->status == 'approved')
 
-                            <span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm">
-                                Pending
-                            </span>
+                        <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
+                            Approved
+                        </span>
 
-                        @elseif($doc->status == 'approved')
+                    @elseif($doc->status == 'rejected')
 
-                            <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
-                                Approved
-                            </span>
+                        <span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-semibold">
+                            Rejected
+                        </span>
 
-                        @elseif($doc->status == 'rejected')
+                    @else
 
-                            <span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm">
-                                Rejected
-                            </span>
+                        <span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-semibold">
+                            Pending
+                        </span>
 
-                        @endif
+                    @endif
 
-                    </td>
+                </td>
 
-                    <!-- Upload Time -->
-                    <td class="p-4 border-b text-gray-500">
-                        {{ $doc->created_at->format('d M Y H:i') }}
-                    </td>
+                <td class="px-6 py-4">
 
-                    <!-- Preview -->
-                    <td class="p-4 border-b text-center">
+                    {{ $doc->created_at->format('d M Y') }}
 
-                        <a href="{{ asset('storage/' . $doc->file_path) }}"
-                           target="_blank"
-                           class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg transition">
-                            Preview
-                        </a>
+                </td>
 
-                    </td>
+                <td class="px-6 py-4 text-center">
 
-                    <!-- Actions -->
-                    <td class="p-4 border-b">
+                    @if($doc->status == 'pending')
 
-                        @if($doc->status == 'pending')
+                        <div class="flex justify-center gap-2">
 
-                            <div class="flex justify-center gap-2">
+                            <a href="{{ route('documents.approve', $doc->id) }}"
+                               class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">
 
-                                <!-- Approve -->
-                                <a href="{{ route('documents.approve', $doc->id) }}"
-                                   onclick="return confirm('Approve dokumen ini?')"
-                                   class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg transition">
+                                Approve
 
-                                    Approve
-                                </a>
+                            </a>
 
-                                <!-- Reject -->
-                                <a href="{{ route('documents.reject', $doc->id) }}"
-                                   onclick="return confirm('Reject dokumen ini?')"
-                                   class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg transition">
+                            <a href="{{ route('documents.reject', $doc->id) }}"
+                               class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg">
 
-                                    Reject
-                                </a>
+                                Reject
 
-                            </div>
+                            </a>
 
-                        @else
+                        </div>
 
-                            <div class="text-center text-gray-400 text-sm">
-                                Tidak ada aksi
-                            </div>
+                    @else
 
-                        @endif
+                        <span class="text-gray-400">
+                            Sudah diproses
+                        </span>
 
-                    </td>
+                    @endif
 
-                </tr>
+                </td>
 
-                @empty
+            </tr>
 
-                <tr>
-                    <td colspan="5" class="text-center p-6 text-gray-500">
-                        Belum ada dokumen
-                    </td>
-                </tr>
+        @empty
 
-                @endforelse
+            <tr>
 
-            </tbody>
+                <td colspan="4"
+                    class="text-center py-10 text-gray-500">
 
-        </table>
+                    Belum ada dokumen
 
-    </div>
+                </td>
+
+            </tr>
+
+        @endforelse
+
+        </tbody>
+
+    </table>
+
+</div>
+
+<div class="mt-6">
+
+    {{ $documents->links() }}
 
 </div>
 

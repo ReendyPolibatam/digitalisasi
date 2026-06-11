@@ -14,7 +14,7 @@ Route::get('/', function () {
 
     if (auth()->check()) {
 
-        if (auth()->user()->role == 'admin') {
+        if (auth()->user()->role === 'admin') {
             return redirect()->route('admin.dashboard');
         }
 
@@ -27,19 +27,17 @@ Route::get('/', function () {
 
 /*
 |--------------------------------------------------------------------------
-| STAFF
+| STAFF ROUTES
 |--------------------------------------------------------------------------
 */
 
 Route::middleware(['auth', 'role:staff'])->group(function () {
 
-    // Dashboard
     Route::get(
         '/staff',
         [DocumentController::class, 'staffDashboard']
     )->name('staff.dashboard');
 
-    // Upload & Dokumen Saya
     Route::resource(
         'documents',
         DocumentController::class
@@ -49,18 +47,17 @@ Route::middleware(['auth', 'role:staff'])->group(function () {
         'store'
     ]);
 
-    // Download
     Route::get(
         '/documents/{id}/download',
-        [DocumentController::class, 'download'
-    ])->name('documents.download');
+        [DocumentController::class, 'download']
+    )->name('documents.download');
 
 });
 
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN
+| ADMIN ROUTES
 |--------------------------------------------------------------------------
 */
 
@@ -80,12 +77,6 @@ Route::middleware(['auth', 'role:admin'])
             [DocumentController::class, 'adminIndex']
         )->name('admin.documents');
 
-        // Library Dokumen
-        Route::get(
-            '/library',
-            [DocumentController::class, 'library']
-        )->name('admin.library');
-
         // Approve
         Route::get(
             '/documents/{id}/approve',
@@ -98,13 +89,19 @@ Route::middleware(['auth', 'role:admin'])
             [DocumentController::class, 'reject']
         )->name('documents.reject');
 
+        // Library
+        Route::get(
+            '/library',
+            [DocumentController::class, 'library']
+        )->name('admin.library');
+
         // Monitoring
         Route::get(
             '/monitoring',
             [DocumentController::class, 'monitoring']
         )->name('admin.monitoring');
 
-});
+    });
 
 
 /*

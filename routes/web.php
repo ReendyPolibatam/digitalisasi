@@ -24,7 +24,6 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-
 /*
 |--------------------------------------------------------------------------
 | STAFF ROUTES
@@ -52,8 +51,12 @@ Route::middleware(['auth', 'role:staff'])->group(function () {
         [DocumentController::class, 'download']
     )->name('documents.download');
 
-});
+    Route::post(
+        '/documents/{id}/ocr',
+        [DocumentController::class, 'processOCR']
+    )->name('documents.ocr');
 
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -65,44 +68,41 @@ Route::middleware(['auth', 'role:admin'])
     ->prefix('admin')
     ->group(function () {
 
-        // Dashboard
         Route::get(
             '/',
             [DocumentController::class, 'adminDashboard']
         )->name('admin.dashboard');
 
-        // Verifikasi Dokumen
         Route::get(
             '/documents',
             [DocumentController::class, 'adminIndex']
         )->name('admin.documents');
 
-        // Approve
+        Route::get(
+            '/documents/{id}',
+            [DocumentController::class, 'showDocument']
+        )->name('admin.documents.show');
+
         Route::get(
             '/documents/{id}/approve',
             [DocumentController::class, 'approve']
         )->name('documents.approve');
 
-        // Reject
         Route::get(
             '/documents/{id}/reject',
             [DocumentController::class, 'reject']
         )->name('documents.reject');
 
-        // Library
         Route::get(
             '/library',
             [DocumentController::class, 'library']
         )->name('admin.library');
 
-        // Monitoring
         Route::get(
             '/monitoring',
             [DocumentController::class, 'monitoring']
         )->name('admin.monitoring');
-
     });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -126,9 +126,7 @@ Route::middleware('auth')->group(function () {
         '/profile',
         [ProfileController::class, 'destroy']
     )->name('profile.destroy');
-
 });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -136,4 +134,4 @@ Route::middleware('auth')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

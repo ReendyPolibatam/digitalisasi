@@ -84,35 +84,36 @@
 
                 </td>
 
-                <td class="px-6 py-4 text-center">
+                <td class="px-6 py-4">
 
-                    @if($doc->status == 'pending')
+                    <div class="flex justify-center items-center gap-2 flex-wrap">
 
-                        <div class="flex justify-center gap-2">
+                        <a href="{{ route('admin.documents.show', $doc->id) }}"
+                           class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                            Detail
+                        </a>
+
+                        @if($doc->status == 'pending')
 
                             <a href="{{ route('documents.approve', $doc->id) }}"
                                class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">
-
                                 Approve
-
                             </a>
 
                             <a href="{{ route('documents.reject', $doc->id) }}"
                                class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg">
-
                                 Reject
-
                             </a>
 
-                        </div>
+                        @else
 
-                    @else
+                            <span class="text-gray-400 text-sm">
+                                Sudah diproses
+                            </span>
 
-                        <span class="text-gray-400">
-                            Sudah diproses
-                        </span>
+                        @endif
 
-                    @endif
+                    </div>
 
                 </td>
 

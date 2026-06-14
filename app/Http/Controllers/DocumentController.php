@@ -138,9 +138,15 @@ class DocumentController extends Controller
         'app/public/' . $document->file_path
     );
 
-    $ocrText = (new TesseractOCR($filePath))
-        ->lang('eng')
-        ->run();
+    $ocr = new TesseractOCR($filePath);
+
+    $ocr->executable(
+        'C:\Program Files\Tesseract-OCR\tesseract.exe'
+    );
+
+    $ocr->lang('eng');
+
+    $ocrText = $ocr->run();
 
     $document->update([
         'ocr_text' => $ocrText

@@ -178,39 +178,6 @@
 
                 </tr>
 
-                @if($doc->ocr_text)
-
-                <div id="ocrModal{{ $doc->id }}"
-                     class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-
-                    <div class="bg-white rounded-xl shadow-xl w-11/12 max-w-4xl p-6">
-
-                        <div class="flex justify-between items-center mb-4">
-
-                            <h3 class="text-xl font-bold">
-                                Hasil OCR
-                            </h3>
-
-                            <button
-                                onclick="document.getElementById('ocrModal{{ $doc->id }}').classList.add('hidden')"
-                                class="text-gray-500 hover:text-gray-700 text-2xl">
-                                ×
-                            </button>
-
-                        </div>
-
-                        <div class="bg-gray-100 rounded-lg p-4 max-h-[500px] overflow-y-auto">
-
-                            <pre class="whitespace-pre-wrap text-sm text-gray-800">{{ $doc->ocr_text }}</pre>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-                @endif
-
                 @empty
 
                 <tr>
@@ -237,5 +204,42 @@
     </div>
 
 </div>
+
+@foreach($documents as $doc)
+
+    @if($doc->ocr_text)
+
+    <div id="ocrModal{{ $doc->id }}"
+         class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+
+        <div class="bg-white rounded-xl shadow-xl w-11/12 max-w-5xl p-6">
+
+            <div class="flex justify-between items-center mb-4">
+
+                <h3 class="text-xl font-bold">
+                    Hasil OCR - {{ $doc->file_name }}
+                </h3>
+
+                <button
+                    onclick="document.getElementById('ocrModal{{ $doc->id }}').classList.add('hidden')"
+                    class="text-gray-500 hover:text-gray-700 text-2xl">
+                    ×
+                </button>
+
+            </div>
+
+            <div class="bg-gray-100 rounded-lg p-4 max-h-[600px] overflow-y-auto">
+
+                <pre class="whitespace-pre-wrap text-sm text-gray-800">{{ $doc->ocr_text }}</pre>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    @endif
+
+@endforeach
 
 @endsection

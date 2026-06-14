@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use App\Services\DocumentClassifierService;
+use App\Services\DocumentFieldExtractorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use thiagoalessio\TesseractOCR\TesseractOCR;
+
 
 class DocumentController extends Controller
 {
@@ -127,36 +130,70 @@ class DocumentController extends Controller
     }
 
     public function processOCR($id)
-{
-    $document = Document::findOrFail($id);
+    {
+        $document = Document::findOrFail($id);
 
-    if ($document->user_id !== Auth::id()) {
-        abort(403);
+        if ($document->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $pdfPath = storage_path('app/public/' . $document->file_path);
+
+        $tempDir = storage_path("app/temp/doc_{$document->id}");
+        if (!file_exists($tempDir)) {
+            mkdir($tempDir, 0777, true);
+        }
+
+        $outputPrefix = $tempDir . '/page';
+
+        $popplerPath = 'C:\poppler\Library\bin\pdftoppm.exe';
+
+        $command = "\"$popplerPath\" -png -r 200 \"$pdfPath\" \"$outputPrefix\"";
+        shell_exec($command);
+
+        $images = glob($tempDir . '/page-*.png');
+        sort($images);
+
+        $fullText = '';
+
+        foreach ($images as $imagePath) {
+            $ocr = new TesseractOCR($imagePath);
+            $ocr->executable('C:\Program Files\Tesseract-OCR\tesseract.exe');
+            $ocr->lang('eng', 'ind');
+
+            $fullText .= $ocr->run() . "\n\n";
+
+            unlink($imagePath);
+        }
+
+        @rmdir($tempDir);
+
+        $ocrText = $fullText;
+
+        // Klasifikasi otomatis
+        $classifier = new DocumentClassifierService();
+        $classification = $classifier->classify($ocrText);
+
+        // Ekstraksi field penting
+        $extractor = new DocumentFieldExtractorService();
+        $extracted = $extractor->extract($ocrText);
+
+        $document->update([
+            'ocr_text'         => $ocrText,
+            'category'         => $classification['category'],
+            'confidence_score' => $classification['confidence'],
+            'vessel_name'      => $extracted['vessel_name'],
+            'loading_date'     => $extracted['loading_date'],
+            'discharge_date'   => $extracted['discharge_date'],
+            'bl_liters_obs'    => $extracted['bl_liters_obs'],
+            'liters_15c'       => $extracted['liters_15c'],
+        ]);
+
+        return back()->with(
+            'success',
+            'OCR berhasil diproses. Kategori: ' . $classification['label']
+        );
     }
-
-    $filePath = storage_path(
-        'app/public/' . $document->file_path
-    );
-
-    $ocr = new TesseractOCR($filePath);
-
-    $ocr->executable(
-        'C:\Program Files\Tesseract-OCR\tesseract.exe'
-    );
-
-    $ocr->lang('eng');
-
-    $ocrText = $ocr->run();
-
-    $document->update([
-        'ocr_text' => $ocrText
-    ]);
-
-    return back()->with(
-        'success',
-        'OCR berhasil diproses.'
-    );
-}
 
     /*
     |--------------------------------------------------------------------------

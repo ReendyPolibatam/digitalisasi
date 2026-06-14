@@ -13,20 +13,23 @@ class Document extends Model
         'file_name',
         'file_path',
         'ocr_text',
-
-        // Data hasil ekstraksi OCR
-        'ship_name',
-        'voyage_number',
-        'document_type',
-
-        // Status
         'status',
         'user_id',
+        'ship_name',
+        'category',
+        'confidence_score',
+        'ocr_result',
+        'confidence',
+        'vessel_name',
+        'loading_date',
+        'discharge_date',
+        'bl_liters_obs',
+        'liters_15c',
     ];
 
     protected $casts = [
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+    'loading_date' => 'date',
+    'discharge_date' => 'date',
     ];
 
     /*

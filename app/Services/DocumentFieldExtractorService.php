@@ -48,13 +48,22 @@ class DocumentFieldExtractorService
     {
         $lines = preg_split('/\r\n|\r|\n/', $text);
 
-        foreach ($lines as $line) {
+        foreach ($lines as $index => $line) {
             $lineLower = mb_strtolower($line);
 
             foreach ($keywords as $keyword) {
                 if (str_contains($lineLower, $keyword)) {
+
+                    // Cek tanggal di baris yang sama
                     if (preg_match('/\b(\d{1,2})[\-\/](\w{3,9}|\d{1,2})[\-\/](\d{4})\b/', $line, $matches)) {
                         return $this->normalizeDate($matches[1], $matches[2], $matches[3]);
+                    }
+
+                    // Kalau tidak ada, cek baris berikutnya (maks 1 baris ke depan)
+                    if (isset($lines[$index + 1])) {
+                        if (preg_match('/\b(\d{1,2})[\-\/](\w{3,9}|\d{1,2})[\-\/](\d{4})\b/', $lines[$index + 1], $matches)) {
+                            return $this->normalizeDate($matches[1], $matches[2], $matches[3]);
+                        }
                     }
                 }
             }

@@ -180,5 +180,89 @@
     @endif
 
 </div>
+{{-- Hasil Klasifikasi --}}
+<div class="bg-white rounded-xl shadow p-6 mt-6">
+
+    <div class="flex items-center justify-between mb-5">
+
+        <h2 class="text-lg font-semibold">
+            Hasil Klasifikasi
+        </h2>
+
+        @if($document->category)
+            @php
+                $categoryLabels = [
+                    'invoice'   => ['label' => 'Invoice', 'color' => 'bg-blue-100 text-blue-700'],
+                    'loading'   => ['label' => 'Dokumen Loading', 'color' => 'bg-green-100 text-green-700'],
+                    'unloading' => ['label' => 'Dokumen Bongkar', 'color' => 'bg-orange-100 text-orange-700'],
+                ];
+
+                $categoryInfo = $categoryLabels[$document->category] ?? [
+                    'label' => 'Tidak Terklasifikasi',
+                    'color' => 'bg-gray-100 text-gray-700',
+                ];
+            @endphp
+
+            <span class="px-3 py-1 {{ $categoryInfo['color'] }} rounded-full text-sm font-medium">
+                {{ $categoryInfo['label'] }}
+                @if($document->confidence_score)
+                    ({{ number_format($document->confidence_score * 100, 0) }}%)
+                @endif
+            </span>
+        @else
+            <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
+                Belum Diklasifikasikan
+            </span>
+        @endif
+
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+        <div class="bg-gray-50 rounded-lg p-4">
+            <p class="text-sm text-gray-500">Nama Kapal</p>
+            <p class="font-medium text-gray-800 mt-1">
+                {{ $document->vessel_name ?? '-' }}
+            </p>
+        </div>
+
+        <div class="bg-gray-50 rounded-lg p-4">
+            <p class="text-sm text-gray-500">Tanggal Loading</p>
+            <p class="font-medium text-gray-800 mt-1">
+                {{ $document->loading_date ? $document->loading_date->format('d M Y') : '-' }}
+            </p>
+        </div>
+
+        <div class="bg-gray-50 rounded-lg p-4">
+            <p class="text-sm text-gray-500">Tanggal Bongkar</p>
+            <p class="font-medium text-gray-800 mt-1">
+                {{ $document->discharge_date ? $document->discharge_date->format('d M Y') : '-' }}
+            </p>
+        </div>
+
+        <div class="bg-gray-50 rounded-lg p-4">
+            <p class="text-sm text-gray-500">BL Liters Observed</p>
+            <p class="font-medium text-gray-800 mt-1">
+                {{ $document->bl_liters_obs ? number_format($document->bl_liters_obs, 0, ',', '.') . ' L' : '-' }}
+            </p>
+        </div>
+
+        <div class="bg-gray-50 rounded-lg p-4">
+            <p class="text-sm text-gray-500">Liters @ 15°C</p>
+            <p class="font-medium text-gray-800 mt-1">
+                {{ $document->liters_15c ? number_format($document->liters_15c, 0, ',', '.') . ' L' : '-' }}
+            </p>
+        </div>
+
+        <div class="bg-gray-50 rounded-lg p-4">
+            <p class="text-sm text-gray-500">Tingkat Keyakinan</p>
+            <p class="font-medium text-gray-800 mt-1">
+                {{ $document->confidence_score ? number_format($document->confidence_score * 100, 0) . '%' : '-' }}
+            </p>
+        </div>
+
+    </div>
+
+</div>
 
 @endsection

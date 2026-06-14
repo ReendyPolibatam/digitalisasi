@@ -137,8 +137,7 @@
 
                         <div class="flex flex-wrap justify-center gap-2">
 
-                            <a href="{{ asset('storage/'.$doc->file_path) }}"
-                               target="_blank"
+                            <a href="{{ route('documents.show', $doc->id) }}"
                                class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg">
                                 Preview
                             </a>

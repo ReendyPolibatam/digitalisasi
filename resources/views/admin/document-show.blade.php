@@ -14,6 +14,18 @@
 
 </div>
 
+@if(session('success'))
+    <div class="mb-4 px-4 py-3 bg-green-100 text-green-700 rounded-lg">
+        {{ session('success') }}
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="mb-4 px-4 py-3 bg-red-100 text-red-700 rounded-lg">
+        {{ session('error') }}
+    </div>
+@endif
+
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
     <!-- Preview -->
@@ -46,7 +58,7 @@
 
             </p>
 
-            <a href="{{ route('documents.download',$document->id) }}"
+            <a href="{{ route('documents.download', $document->id) }}"
                class="mt-5 bg-blue-500 hover:bg-blue-600 text-white px-5 py-2 rounded-lg">
 
                 Download Dokumen
@@ -135,7 +147,7 @@
                 </p>
 
                 <p class="font-medium">
-                    -
+                    {{ !empty($document->voyage) ? $document->voyage : '-' }}
                 </p>
 
             </div>
@@ -166,19 +178,22 @@
 
     <div class="flex justify-center gap-4">
 
-        <a href="{{ route('documents.approve',$document->id) }}"
-           class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg">
+        <form action="{{ route('documents.approve', $document->id) }}" method="POST">
+            @csrf
+            <button type="submit"
+                    class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg">
+                ✓ Approve
+            </button>
+        </form>
 
-            ✓ Approve
-
-        </a>
-
-        <a href="{{ route('documents.reject',$document->id) }}"
-           class="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg">
-
-            ✕ Reject
-
-        </a>
+        <form action="{{ route('documents.reject', $document->id) }}" method="POST"
+              onsubmit="return confirm('Yakin ingin menolak dokumen ini?')">
+            @csrf
+            <button type="submit"
+                    class="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg">
+                ✕ Reject
+            </button>
+        </form>
 
     </div>
 

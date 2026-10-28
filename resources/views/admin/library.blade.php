@@ -19,66 +19,64 @@
 
     @forelse($ships as $ship)
 
-        <div class="ship-card bg-white rounded-xl shadow hover:shadow-lg transition p-6">
+        <a href="{{ route('admin.library.vessel', $ship->key) }}"
+           class="ship-card block bg-white rounded-xl shadow hover:shadow-lg hover:ring-2 hover:ring-blue-200 transition p-6">
 
             <div class="flex justify-between items-center mb-4">
 
                 <div class="text-4xl">🚢</div>
 
                 <div class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold">
-                    {{ $ship->total_documents }} Dokumen
+                    {{ $ship->total_voyages }} Folder
                 </div>
 
             </div>
 
             <h2 class="text-xl font-bold text-gray-800 ship-name">
-                {{ $ship->ship_name }}
+                {{ $ship->vessel_name }}
             </h2>
 
-            <p class="text-sm text-gray-400 mt-1">
-                {{ $ship->voyage }}
+            <p class="text-sm text-blue-600 mt-6 pt-4 border-t">
+                Buka folder →
             </p>
 
-            <p class="text-gray-500 mt-3">
-                @if($ship->categories->isNotEmpty())
-                    {{ $ship->categories->implode(' • ') }}
-                @else
-                    <span class="text-gray-400 italic">Belum ada kategori</span>
-                @endif
-            </p>
-
-            <div class="mt-4 pt-4 border-t flex flex-wrap gap-2">
-                @foreach($ship->document_ids as $docId)
-                    <a href="{{ route('admin.documents.show', $docId) }}"
-                       class="text-xs bg-gray-100 hover:bg-blue-100 hover:text-blue-700 text-gray-600 px-3 py-1 rounded-full transition">
-                        Dokumen #{{ $docId }}
-                    </a>
-                @endforeach
-            </div>
-
-        </div>
+        </a>
 
     @empty
 
-        <div class="col-span-3 bg-white rounded-xl shadow p-10 text-center">
+        <div class="col-span-full bg-white rounded-xl shadow p-10 text-center">
             <div class="text-5xl mb-3">📂</div>
             <h2 class="text-xl font-semibold text-gray-700">Belum Ada Data Kapal</h2>
-            <p class="text-gray-500 mt-2">Dokumen yang sudah diproses akan muncul di sini.</p>
+            <p class="text-gray-500 mt-2">Dokumen yang sudah disubmit staff akan muncul di sini.</p>
         </div>
 
     @endforelse
 
+    <p id="noResult" class="hidden col-span-full text-center text-gray-500 py-6">
+        Kapal tidak ditemukan.
+    </p>
+
 </div>
 
 <script>
-document.getElementById('searchShip').addEventListener('keyup', function() {
-    let keyword = this.value.toLowerCase();
+    const searchInput = document.getElementById('searchShip');
+    const shipCards   = document.querySelectorAll('.ship-card');
+    const noResult    = document.getElementById('noResult');
 
-    document.querySelectorAll('.ship-card').forEach(function(card) {
-        let shipName = card.querySelector('.ship-name').innerText.toLowerCase();
-        card.style.display = shipName.includes(keyword) ? '' : 'none';
+    searchInput.addEventListener('input', function () {
+        const keyword = this.value.trim().toLowerCase();
+        let visible = 0;
+
+        shipCards.forEach(function (card) {
+            const shipName = card.querySelector('.ship-name').innerText.toLowerCase();
+            const match = shipName.includes(keyword);
+
+            card.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+
+        noResult.classList.toggle('hidden', visible !== 0 || shipCards.length === 0);
     });
-});
 </script>
 
 @endsection

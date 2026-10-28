@@ -2,6 +2,36 @@
 
 @section('content')
 
+@php
+    $categoryLabels = [
+        'invoice'   => ['label' => 'Invoice',          'color' => 'bg-blue-100 text-blue-700'],
+        'loading'   => ['label' => 'Dokumen Loading',  'color' => 'bg-green-100 text-green-700'],
+        'unloading' => ['label' => 'Dokumen Bongkar',  'color' => 'bg-orange-100 text-orange-700'],
+        'bongkar'   => ['label' => 'Dokumen Bongkar',  'color' => 'bg-orange-100 text-orange-700'],
+    ];
+
+    // Tampilkan teks hasil editan staff kalau ada (itu yang dianalisis saat submit)
+    $finalOcrText = $document->ocr_text_edited ?: $document->ocr_text;
+@endphp
+
+@if(session('success'))
+    <div class="bg-green-100 border border-green-300 text-green-700 p-4 rounded-lg mb-5">
+        {{ session('success') }}
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="bg-red-100 border border-red-300 text-red-700 p-4 rounded-lg mb-5">
+        {{ session('error') }}
+    </div>
+@endif
+
+@if($errors->any())
+    <div class="bg-red-100 border border-red-300 text-red-700 p-4 rounded-lg mb-5">
+        {{ $errors->first() }}
+    </div>
+@endif
+
 <div class="mb-6">
 
     <h1 class="text-3xl font-bold text-gray-800">
@@ -72,6 +102,12 @@
                             Rejected
                         </span>
 
+                    @elseif($document->status == 'draft')
+
+                        <span class="inline-flex px-3 py-1 rounded-full bg-gray-200 text-gray-700 text-sm font-medium">
+                            Draft
+                        </span>
+
                     @else
 
                         <span class="inline-flex px-3 py-1 rounded-full bg-yellow-100 text-yellow-700 text-sm font-medium">
@@ -81,6 +117,18 @@
                     @endif
 
                 </div>
+
+                @if($document->status == 'rejected' && $document->admin_note)
+                    <div>
+                        <p class="text-sm text-gray-500">
+                            Alasan Reject
+                        </p>
+
+                        <p class="font-medium text-red-700 break-words">
+                            {{ $document->admin_note }}
+                        </p>
+                    </div>
+                @endif
 
                 <div>
                     <p class="text-sm text-gray-500">
@@ -118,21 +166,38 @@
 
                 @if($document->status == 'pending')
 
-                    <a
-                        href="{{ route('documents.approve', $document->id) }}"
-                        class="w-full inline-flex justify-center bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-medium">
+                    {{-- Approve: harus POST, jadi pakai form (link biasa mengirim GET → 405) --}}
+                    <form action="{{ route('documents.approve', $document->id) }}" method="POST">
+                        @csrf
+                        <button
+                            type="submit"
+                            onclick="return confirm('Approve dokumen ini?')"
+                            class="w-full inline-flex justify-center bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-medium">
 
-                        Approve
+                            Approve
 
-                    </a>
+                        </button>
+                    </form>
 
-                    <a
-                        href="{{ route('documents.reject', $document->id) }}"
-                        class="w-full inline-flex justify-center bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg font-medium">
+                    {{-- Reject: ikut kirim alasan (admin_note) ke controller --}}
+                    <form action="{{ route('documents.reject', $document->id) }}" method="POST" class="space-y-2">
+                        @csrf
+                        <textarea
+                            name="admin_note"
+                            rows="2"
+                            maxlength="500"
+                            placeholder="Alasan reject (opsional)"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400">{{ old('admin_note') }}</textarea>
 
-                        Reject
+                        <button
+                            type="submit"
+                            onclick="return confirm('Reject dokumen ini?')"
+                            class="w-full inline-flex justify-center bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg font-medium">
 
-                    </a>
+                            Reject
+
+                        </button>
+                    </form>
 
                 @endif
 
@@ -159,11 +224,11 @@
         Hasil OCR
     </h2>
 
-    @if($document->ocr_text)
+    @if($finalOcrText)
 
         <div class="bg-gray-50 border rounded-lg p-4">
 
-            <pre class="whitespace-pre-wrap text-sm text-gray-700">{{ $document->ocr_text }}</pre>
+            <pre class="whitespace-pre-wrap text-sm text-gray-700">{{ $finalOcrText }}</pre>
 
         </div>
 
@@ -180,6 +245,7 @@
     @endif
 
 </div>
+
 {{-- Hasil Klasifikasi --}}
 <div class="bg-white rounded-xl shadow p-6 mt-6">
 
@@ -191,12 +257,6 @@
 
         @if($document->category)
             @php
-                $categoryLabels = [
-                    'invoice'   => ['label' => 'Invoice', 'color' => 'bg-blue-100 text-blue-700'],
-                    'loading'   => ['label' => 'Dokumen Loading', 'color' => 'bg-green-100 text-green-700'],
-                    'unloading' => ['label' => 'Dokumen Bongkar', 'color' => 'bg-orange-100 text-orange-700'],
-                ];
-
                 $categoryInfo = $categoryLabels[$document->category] ?? [
                     'label' => 'Tidak Terklasifikasi',
                     'color' => 'bg-gray-100 text-gray-700',
@@ -223,6 +283,13 @@
             <p class="text-sm text-gray-500">Nama Kapal</p>
             <p class="font-medium text-gray-800 mt-1">
                 {{ $document->vessel_name ?? '-' }}
+            </p>
+        </div>
+
+        <div class="bg-gray-50 rounded-lg p-4">
+            <p class="text-sm text-gray-500">Voyage</p>
+            <p class="font-medium text-gray-800 mt-1 break-all">
+                {{ $document->voyage ?: '-' }}
             </p>
         </div>
 

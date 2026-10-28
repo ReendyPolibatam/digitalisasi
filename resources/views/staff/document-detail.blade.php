@@ -95,8 +95,10 @@
 
                     @if($document->ocr_text)
                         @if($document->status == 'draft')
-                            <form action="{{ route('documents.submit', $document->id) }}" method="POST">
+                            <form action="{{ route('documents.submit', $document->id) }}" method="POST" id="submitForm">
                                 @csrf
+                                {{-- Diisi dari textarea saat mode edit, supaya editan yang belum disimpan ikut terkirim --}}
+                                <input type="hidden" name="ocr_text" id="submitOcrText" disabled>
                                 <button type="submit"
                                         class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg">
                                     Submit ke Admin
@@ -126,13 +128,45 @@
 {{-- OCR RESULT --}}
 <div class="mt-6">
     <div class="bg-white rounded-xl shadow">
-        <div class="border-b px-6 py-4">
-            <h2 class="font-semibold text-gray-700">Hasil OCR</h2>
+        <div class="border-b px-6 py-4 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <h2 class="font-semibold text-gray-700">Hasil OCR</h2>
+                @if($document->ocr_text_edited)
+                    <span class="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">Sudah diedit</span>
+                @endif
+            </div>
+
+            @if($document->ocr_text && $document->status == 'draft')
+                <button type="button" id="ocrEditBtn"
+                        class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-medium rounded-lg">
+                    Edit Hasil OCR
+                </button>
+            @endif
         </div>
 
         <div class="p-6">
             @if($document->ocr_text)
-                <textarea class="w-full border rounded-lg p-4 h-96" readonly>{{ $document->ocr_text }}</textarea>
+                <form action="{{ route('documents.ocr.update', $document->id) }}" method="POST" id="ocrTextForm">
+                    @csrf
+                    <textarea name="ocr_text" id="ocrText"
+                              class="w-full border rounded-lg p-4 h-96 read-only:bg-gray-50"
+                              readonly>{{ $document->ocr_text_edited ?: $document->ocr_text }}</textarea>
+
+                    @error('ocr_text')
+                        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                    @enderror
+
+                    <div id="ocrEditActions" class="hidden mt-4 flex justify-end gap-3">
+                        <button type="button" id="ocrCancelBtn"
+                                class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg">
+                            Batal
+                        </button>
+                        <button type="submit"
+                                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg">
+                            Simpan Perubahan
+                        </button>
+                    </div>
+                </form>
             @else
                 <div class="text-center py-10 text-gray-500">
                     OCR belum dijalankan
@@ -154,6 +188,7 @@
                     $categoryLabels = [
                         'invoice'   => ['label' => 'Invoice', 'color' => 'bg-blue-100 text-blue-700'],
                         'loading'   => ['label' => 'Dokumen Loading', 'color' => 'bg-green-100 text-green-700'],
+                        'bongkar'   => ['label' => 'Dokumen Bongkar', 'color' => 'bg-orange-100 text-orange-700'],
                         'unloading' => ['label' => 'Dokumen Bongkar', 'color' => 'bg-orange-100 text-orange-700'],
                     ];
 
@@ -285,6 +320,47 @@ document.getElementById('ocrForm').addEventListener('submit', function() {
         }
     }, 4000);
 });
+
+// Edit hasil OCR: textarea terkunci sampai tombol Edit ditekan
+const ocrText = document.getElementById('ocrText');
+const ocrEditBtn = document.getElementById('ocrEditBtn');
+
+if (ocrText && ocrEditBtn) {
+    const actions = document.getElementById('ocrEditActions');
+    const original = ocrText.value;
+
+    const setEditing = function (editing) {
+        ocrText.readOnly = !editing;
+        actions.classList.toggle('hidden', !editing);
+        ocrEditBtn.classList.toggle('hidden', editing);
+        if (editing) {
+            ocrText.focus();
+        }
+    };
+
+    ocrEditBtn.addEventListener('click', () => setEditing(true));
+
+    document.getElementById('ocrCancelBtn').addEventListener('click', function () {
+        ocrText.value = original;
+        setEditing(false);
+    });
+
+    // Submit ke admin saat masih mode edit: kirim juga teks yang belum disimpan
+    const submitForm = document.getElementById('submitForm');
+    if (submitForm) {
+        submitForm.addEventListener('submit', function () {
+            if (!ocrText.readOnly) {
+                const field = document.getElementById('submitOcrText');
+                field.disabled = false;
+                field.value = ocrText.value;
+            }
+        });
+    }
+
+    @if($errors->has('ocr_text'))
+        setEditing(true);
+    @endif
+}
 </script>
 
 @endsection

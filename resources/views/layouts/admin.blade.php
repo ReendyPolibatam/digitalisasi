@@ -34,6 +34,7 @@
                     ['label' => 'Verifikasi Dokumen',  'route' => 'admin.documents*', 'icon' => '📄', 'href' => 'admin.documents'],
                     ['label' => 'Library Dokumen',     'route' => 'admin.library',    'icon' => '📚'],
                     ['label' => 'Monitoring',          'route' => 'admin.monitoring', 'icon' => '📋'],
+                    ['label' => 'Kelola Pengguna',     'route' => 'admin.users.*',    'icon' => '👥', 'href' => 'admin.users.index'],
                 ];
             @endphp
 
@@ -75,21 +76,8 @@
         <!-- TOPBAR -->
         <header class="bg-white border-b border-gray-200 px-8 h-16 flex justify-between items-center">
 
-            <!-- Search -->
-            <div class="w-96 relative">
-                <input
-                    type="text"
-                    placeholder="Cari dokumen..."
-                    class="w-full h-10 border border-gray-300 rounded-xl px-4 pr-10 text-sm
-                           focus:outline-none focus:ring-2 focus:ring-[#17607a] focus:border-[#17607a]">
-
-                <span class="absolute right-3 top-2.5 text-gray-400">
-                    🔍
-                </span>
-            </div>
-
             <!-- User -->
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 ml-auto">
 
                 <div class="text-right leading-tight">
                     <h3 class="text-sm font-semibold text-gray-800">

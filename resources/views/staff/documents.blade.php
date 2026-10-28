@@ -2,243 +2,316 @@
 
 @section('content')
 
-<div class="bg-white p-6 rounded-2xl shadow">
+@php
+    // ====== SESUAIKAN NAMA ROUTE DI SINI KALAU BERBEDA DI routes/web.php ======
+    $routeShow     = 'documents.show';      // halaman detail / hasil OCR
+    $routeDownload = 'documents.download';  // download file
+    $routeOcr      = 'documents.ocr';       // proses OCR (POST)
+    // ===========================================================================
 
-    <div class="flex justify-between items-center mb-6">
+    $categoryLabels = [
+        'invoice'   => 'Invoice',
+        'loading'   => 'Loading',
+        'unloading' => 'Bongkar',
+        'bongkar'   => 'Bongkar',
+    ];
 
-        <div>
-            <h2 class="text-2xl font-bold text-gray-800">
-                Dokumen Saya
-            </h2>
+    $statusStyle = [
+        'draft'    => 'bg-gray-100 text-gray-600',
+        'pending'  => 'bg-yellow-100 text-yellow-700',
+        'approved' => 'bg-green-100 text-green-700',
+        'rejected' => 'bg-red-100 text-red-700',
+    ];
+@endphp
 
-            <p class="text-gray-500 text-sm">
-                Upload, proses OCR, dan pantau status dokumen
-            </p>
-        </div>
-
-        <a href="{{ route('documents.create') }}"
-           class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg">
-            + Upload Dokumen
-        </a>
-
+<div class="flex items-start justify-between mb-8">
+    <div>
+        <h1 class="text-3xl font-bold text-gray-800">Dokumen Saya</h1>
+        <p class="text-gray-500 mt-2">Upload, proses OCR, dan pantau status dokumen per kapal.</p>
     </div>
+    <a href="{{ route('documents.create') }}"
+       class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition">
+        + Upload Dokumen
+    </a>
+</div>
 
-    @if(session('success'))
-        <div class="bg-green-100 border border-green-300 text-green-700 p-4 rounded-lg mb-5">
-            {{ session('success') }}
+{{-- Statistik --}}
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+    <div class="bg-white p-5 rounded-2xl shadow">
+        <p class="text-gray-500 text-sm">Total</p>
+        <h2 class="text-2xl font-bold text-blue-600">{{ $total }}</h2>
+    </div>
+    <div class="bg-white p-5 rounded-2xl shadow">
+        <p class="text-gray-500 text-sm">Draft</p>
+        <h2 class="text-2xl font-bold text-gray-500">{{ $draft }}</h2>
+    </div>
+    <div class="bg-white p-5 rounded-2xl shadow">
+        <p class="text-gray-500 text-sm">Pending</p>
+        <h2 class="text-2xl font-bold text-yellow-500">{{ $pending }}</h2>
+    </div>
+    <div class="bg-white p-5 rounded-2xl shadow">
+        <p class="text-gray-500 text-sm">Approved</p>
+        <h2 class="text-2xl font-bold text-green-500">{{ $approved }}</h2>
+    </div>
+    <div class="bg-white p-5 rounded-2xl shadow">
+        <p class="text-gray-500 text-sm">Rejected</p>
+        <h2 class="text-2xl font-bold text-red-500">{{ $rejected }}</h2>
+    </div>
+</div>
+
+{{-- Menunggu Proses OCR --}}
+@if($waitingOcr->isNotEmpty())
+    <div class="bg-white rounded-xl shadow border-l-4 border-yellow-400 p-6 mb-8">
+        <div class="flex items-start justify-between">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">⏳ Menunggu Proses OCR</h2>
+                <p class="text-xs text-gray-500 mt-1">
+                    Setelah OCR selesai, dokumen otomatis pindah ke kartu kapalnya.
+                </p>
+            </div>
+            <span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-semibold">
+                {{ $waitingOcr->count() }} Dokumen
+            </span>
         </div>
-    @endif
 
-    @if(session('error'))
-        <div class="bg-red-100 border border-red-300 text-red-700 p-4 rounded-lg mb-5">
-            {{ session('error') }}
+        <div class="mt-4 space-y-2">
+            @foreach($waitingOcr as $doc)
+                <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-lg bg-gray-50">
+                    <div class="min-w-0">
+                        <p class="text-sm font-medium text-gray-700 truncate">{{ $doc->file_name }}</p>
+                        <p class="text-xs text-gray-400">{{ $doc->created_at->format('d M Y H:i') }}</p>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <a href="{{ asset('storage/' . $doc->file_path) }}" target="_blank"
+                           class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-md text-xs font-semibold">Preview</a>
+                        <a href="{{ route($routeDownload, $doc->id) }}"
+                           class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-md text-xs font-semibold">Download</a>
+                        <form action="{{ route($routeOcr, $doc->id) }}" method="POST"
+                              onsubmit="this.querySelector('button').disabled = true; this.querySelector('button').innerText = 'Memproses...';">
+                            @csrf
+                            <button type="submit"
+                                    class="bg-purple-600 hover:bg-purple-700 disabled:opacity-60 text-white px-3 py-1.5 rounded-md text-xs font-semibold">
+                                Proses OCR
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            @endforeach
         </div>
-    @endif
+    </div>
+@endif
 
-    <div class="overflow-x-auto">
+{{-- Search + filter --}}
+<div class="bg-white rounded-xl shadow p-5 mb-8 space-y-4">
+    <input
+        type="text"
+        id="searchShip"
+        placeholder="Cari nama kapal atau nama file..."
+        class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
 
-        <table class="w-full border border-gray-200">
+    <div class="flex flex-wrap gap-2">
+        <button type="button" data-filter="all"
+                class="filter-btn px-4 py-1.5 rounded-full text-sm font-medium bg-blue-600 text-white">Semua</button>
+        <button type="button" data-filter="draft"
+                class="filter-btn px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-700">Ada draft</button>
+        <button type="button" data-filter="incomplete"
+                class="filter-btn px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-700">Belum selesai</button>
+        <button type="button" data-filter="complete"
+                class="filter-btn px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-700">Semua approved</button>
+    </div>
+</div>
 
-            <thead class="bg-gray-100">
+{{-- Card per Kapal --}}
+<div id="shipContainer" class="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
 
-                <tr>
+    @forelse($ships as $ship)
 
-                    <th class="p-4 text-left">
-                        Nama File
-                    </th>
+        <div class="ship-card bg-white rounded-xl shadow hover:shadow-lg transition p-6"
+             data-complete="{{ $ship->all_approved ? '1' : '0' }}"
+             data-draft="{{ $ship->draft > 0 ? '1' : '0' }}"
+             data-files="{{ strtolower($ship->documents->pluck('file_name')->implode(' ')) }}">
 
-                    <th class="p-4 text-left">
-                        Status Verifikasi
-                    </th>
+            <div class="flex justify-between items-center mb-4">
+                <div class="text-4xl">🚢</div>
+                <div class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold">
+                    {{ $ship->total_documents }} Dokumen
+                </div>
+            </div>
 
-                    <th class="p-4 text-left">
-                        Status OCR
-                    </th>
+            <h2 class="text-xl font-bold text-gray-800 ship-name">{{ $ship->vessel_name }}</h2>
 
-                    <th class="p-4 text-left">
-                        Upload
-                    </th>
-
-                    <th class="p-4 text-center">
-                        Aksi
-                    </th>
-
-                </tr>
-
-            </thead>
-
-            <tbody>
-
-                @forelse($documents as $doc)
-
-                <tr class="border-t hover:bg-gray-50">
-
-                    <td class="p-4">
-
-                        <div class="font-medium text-gray-800">
-                            {{ $doc->file_name }}
-                        </div>
-
-                        @if($doc->ocr_text)
-                            <div class="text-xs text-green-600 mt-1">
-                                OCR berhasil diproses
-                            </div>
-                        @endif
-
-                    </td>
-
-                    <td class="p-4">
-
-                        @if($doc->status == 'approved')
-
-                            <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
-                                Approved
-                            </span>
-
-                        @elseif($doc->status == 'rejected')
-
-                            <span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm">
-                                Rejected
-                            </span>
-
-                        @else
-
-                            <span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm">
-                                Pending
-                            </span>
-
-                        @endif
-
-                    </td>
-
-                    <td class="p-4">
-
-                        @if($doc->ocr_text)
-
-                            <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
-                                OCR Selesai
-                            </span>
-
-                        @else
-
-                            <span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm">
-                                Belum Diproses
-                            </span>
-
-                        @endif
-
-                    </td>
-
-                    <td class="p-4 text-gray-500">
-                        {{ $doc->created_at->format('d M Y H:i') }}
-                    </td>
-
-                    <td class="p-4">
-
-                        <div class="flex flex-wrap justify-center gap-2">
-
-                            <a href="{{ route('documents.show', $doc->id) }}"
-                               class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg">
-                                Preview
-                            </a>
-
-                            <a href="{{ route('documents.download',$doc->id) }}"
-                               class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg">
-                                Download
-                            </a>
-
-                            @if(!$doc->ocr_text)
-
-                                <form action="{{ route('documents.ocr',$doc->id) }}"
-                                      method="POST">
-
-                                    @csrf
-
-                                    <button type="submit"
-                                            class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg">
-                                        Proses OCR
-                                    </button>
-
-                                </form>
-
-                            @else
-
-                                <button
-                                    onclick="document.getElementById('ocrModal{{ $doc->id }}').classList.remove('hidden')"
-                                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg">
-                                    Lihat Hasil OCR
-                                </button>
-
-                            @endif
-
-                        </div>
-
-                    </td>
-
-                </tr>
-
+            <div class="mt-1 space-y-0.5">
+                @forelse($ship->voyages as $voyage)
+                    <p class="text-sm text-gray-400">{{ $voyage }}</p>
                 @empty
-
-                <tr>
-
-                    <td colspan="5"
-                        class="text-center p-6 text-gray-500">
-
-                        Belum ada dokumen.
-
-                    </td>
-
-                </tr>
-
+                    <p class="text-sm text-gray-400">{{ $ship->detected ? '-' : 'Voyage tidak terdeteksi' }}</p>
                 @endforelse
+            </div>
 
-            </tbody>
+            @if($ship->categories->isNotEmpty())
+                <p class="text-gray-500 mt-2 text-sm">{{ $ship->categories->implode(' • ') }}</p>
+            @endif
 
-        </table>
+            {{-- Status keseluruhan kapal --}}
+            <div class="mt-4">
+                @if($ship->all_approved)
+                    <div class="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-lg px-3 py-2 text-sm font-semibold">
+                        <span>✓</span><span>Semua dokumen sudah di-approve</span>
+                    </div>
+                @elseif($ship->rejected > 0)
+                    <div class="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2 text-sm font-semibold">
+                        <span>!</span><span>{{ $ship->approved }}/{{ $ship->total_documents }} approved · ada yang ditolak</span>
+                    </div>
+                @elseif($ship->draft > 0)
+                    <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 text-gray-600 rounded-lg px-3 py-2 text-sm font-semibold">
+                        <span>✎</span><span>{{ $ship->draft }} dokumen draft belum disubmit ke admin</span>
+                    </div>
+                @else
+                    <div class="flex items-center gap-2 bg-yellow-50 border border-yellow-200 text-yellow-700 rounded-lg px-3 py-2 text-sm font-semibold">
+                        <span>⏳</span><span>{{ $ship->approved }}/{{ $ship->total_documents }} approved · menunggu verifikasi admin</span>
+                    </div>
+                @endif
 
-    </div>
+                <div class="mt-2 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full {{ $ship->all_approved ? 'bg-green-500' : 'bg-yellow-400' }}"
+                         style="width: {{ $ship->progress }}%"></div>
+                </div>
+            </div>
 
-    <div class="mt-6">
-        {{ $documents->links() }}
+            {{-- Ringkasan status --}}
+            <div class="flex flex-wrap gap-2 mt-3">
+                @if($ship->pending > 0)
+                    <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs">{{ $ship->pending }} Pending</span>
+                @endif
+                @if($ship->approved > 0)
+                    <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">{{ $ship->approved }} Approved</span>
+                @endif
+                @if($ship->rejected > 0)
+                    <span class="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs">{{ $ship->rejected }} Rejected</span>
+                @endif
+                @if($ship->draft > 0)
+                    <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">{{ $ship->draft }} Draft</span>
+                @endif
+            </div>
+
+            {{-- Daftar dokumen + aksi --}}
+            <div class="mt-4 pt-4 border-t space-y-2">
+                @foreach($ship->documents as $doc)
+                    <div class="px-3 py-3 rounded-lg bg-gray-50">
+
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-sm font-medium text-gray-700 truncate">{{ $doc->file_name }}</p>
+                                <p class="text-xs text-gray-400">
+                                    {{ $doc->created_at->format('d M Y H:i') }}
+                                    @if($doc->category)
+                                        · {{ $categoryLabels[$doc->category] ?? ucfirst($doc->category) }}
+                                    @endif
+                                </p>
+                            </div>
+                            <span class="shrink-0 px-2 py-1 rounded-full text-xs {{ $statusStyle[$doc->status] ?? 'bg-gray-100 text-gray-600' }}">
+                                {{ ucfirst($doc->status) }}
+                            </span>
+                        </div>
+
+                        {{-- Alasan penolakan dari admin --}}
+                        @if($doc->status === 'rejected' && $doc->admin_note)
+                            <p class="mt-2 text-xs text-red-600 bg-red-50 border border-red-100 rounded-md px-2 py-1.5">
+                                Catatan admin: {{ $doc->admin_note }}
+                            </p>
+                        @endif
+
+                        <div class="flex flex-wrap gap-2 mt-2">
+                            <a href="{{ asset('storage/' . $doc->file_path) }}" target="_blank"
+                               class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md text-xs font-semibold">Preview</a>
+                            <a href="{{ route($routeDownload, $doc->id) }}"
+                               class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-xs font-semibold">Download</a>
+                            <a href="{{ route($routeShow, $doc->id) }}"
+                               class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-md text-xs font-semibold">
+                                {{ $doc->status === 'draft' ? 'Lihat Hasil OCR & Submit' : 'Lihat Hasil OCR' }}
+                            </a>
+                        </div>
+
+                    </div>
+                @endforeach
+            </div>
+
+        </div>
+
+    @empty
+
+        @if($waitingOcr->isEmpty())
+            <div class="col-span-full bg-white rounded-xl shadow p-10 text-center">
+                <div class="text-5xl mb-3">📂</div>
+                <h2 class="text-xl font-semibold text-gray-700">Belum Ada Dokumen</h2>
+                <p class="text-gray-500 mt-2">Upload dokumen pertama kamu untuk mulai proses OCR.</p>
+            </div>
+        @endif
+
+    @endforelse
+
+    <div id="noResult" class="hidden col-span-full bg-white rounded-xl shadow p-10 text-center">
+        <div class="text-5xl mb-3">🔍</div>
+        <h2 class="text-xl font-semibold text-gray-700">Kapal tidak ditemukan</h2>
+        <p class="text-gray-500 mt-2">Coba kata kunci atau filter yang lain.</p>
     </div>
 
 </div>
 
-@foreach($documents as $doc)
+<script>
+(function () {
+    const searchInput = document.getElementById('searchShip');
+    const cards       = document.querySelectorAll('.ship-card');
+    const noResult    = document.getElementById('noResult');
+    const buttons     = document.querySelectorAll('.filter-btn');
+    let activeFilter  = 'all';
 
-    @if($doc->ocr_text)
+    function applyFilters() {
+        const keyword = searchInput.value.toLowerCase().trim();
+        let visible = 0;
 
-    <div id="ocrModal{{ $doc->id }}"
-         class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        cards.forEach(function (card) {
+            const name       = card.querySelector('.ship-name').innerText.toLowerCase();
+            const files      = card.dataset.files || '';
+            const isComplete = card.dataset.complete === '1';
+            const hasDraft   = card.dataset.draft === '1';
 
-        <div class="bg-white rounded-xl shadow-xl w-11/12 max-w-5xl p-6">
+            const matchSearch = name.includes(keyword) || files.includes(keyword);
+            const matchFilter =
+                activeFilter === 'all' ||
+                (activeFilter === 'complete'   && isComplete) ||
+                (activeFilter === 'incomplete' && !isComplete) ||
+                (activeFilter === 'draft'      && hasDraft);
 
-            <div class="flex justify-between items-center mb-4">
+            const show = matchSearch && matchFilter;
+            card.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
 
-                <h3 class="text-xl font-bold">
-                    Hasil OCR - {{ $doc->file_name }}
-                </h3>
+        if (cards.length > 0) {
+            noResult.classList.toggle('hidden', visible > 0);
+        }
+    }
 
-                <button
-                    onclick="document.getElementById('ocrModal{{ $doc->id }}').classList.add('hidden')"
-                    class="text-gray-500 hover:text-gray-700 text-2xl">
-                    ×
-                </button>
+    searchInput.addEventListener('input', applyFilters);
 
-            </div>
+    buttons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            activeFilter = btn.dataset.filter;
 
-            <div class="bg-gray-100 rounded-lg p-4 max-h-[600px] overflow-y-auto">
+            buttons.forEach(function (b) {
+                const active = b === btn;
+                b.classList.toggle('bg-blue-600', active);
+                b.classList.toggle('text-white', active);
+                b.classList.toggle('bg-gray-100', !active);
+                b.classList.toggle('text-gray-700', !active);
+            });
 
-                <pre class="whitespace-pre-wrap text-sm text-gray-800">{{ $doc->ocr_text }}</pre>
-
-            </div>
-
-        </div>
-
-    </div>
-
-    @endif
-
-@endforeach
+            applyFilters();
+        });
+    });
+})();
+</script>
 
 @endsection

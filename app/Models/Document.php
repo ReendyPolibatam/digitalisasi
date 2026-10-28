@@ -13,29 +13,40 @@ class Document extends Model
         'file_name',
         'file_path',
         'ocr_text',
+        'ocr_result',
+        'ocr_text_edited',
         'status',
         'user_id',
-        'ship_name',
+        'vessel_name',
         'category',
         'confidence_score',
-        'ocr_result',
         'confidence',
-        'vessel_name',
         'voyage',
         'loading_date',
         'discharge_date',
         'bl_liters_obs',
         'liters_15c',
+        'submitted_at',
+        'approved_at',
+        'approved_by',
+        'admin_note',
     ];
 
     protected $casts = [
-        'loading_date'  => 'date',
+        'loading_date'   => 'date',
         'discharge_date' => 'date',
+        'submitted_at'   => 'datetime',
+        'approved_at'    => 'datetime',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 
     public static function normalizeVesselName(?string $name): string

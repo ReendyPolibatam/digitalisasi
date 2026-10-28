@@ -83,15 +83,6 @@
                     @enderror
                 </div>
 
-                <!-- Remember -->
-                <div class="mb-6">
-                    <label for="remember" class="flex items-center gap-2 text-sm text-gray-600">
-                        <input id="remember" type="checkbox" name="remember"
-                               class="rounded border-gray-300 text-[#17607a] focus:ring-[#17607a]">
-                        Remember me
-                    </label>
-                </div>
-
                 <!-- Button -->
                 <button
                     type="submit"
@@ -100,14 +91,8 @@
                     Login
                 </button>
 
-                <!-- Lupa password & Register -->
-                <div class="flex items-center justify-between text-sm mt-5">
-                    @if (Route::has('password.request'))
-                        <a href="{{ route('password.request') }}" class="text-[#17607a] hover:underline">
-                            Lupa Password?
-                        </a>
-                    @endif
-
+                <!-- Register -->
+                <div class="flex items-center justify-end text-sm mt-5">
                     @if (Route::has('register'))
                         <a href="{{ route('register') }}" class="text-[#17607a] hover:underline">
                             Register

@@ -1,9 +1,10 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
-use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 // Landing page: belum login -> login, sudah login -> dashboard sesuai role
 Route::get('/', function () {
@@ -43,6 +44,11 @@ Route::middleware(['auth', 'role:staff'])->group(function () {
         ->whereNumber('id')
         ->name('documents.ocr');
 
+    // Simpan hasil edit teks OCR (draft, belum disubmit)
+    Route::post('/documents/{id}/ocr-text', [DocumentController::class, 'updateOcrText'])
+        ->whereNumber('id')
+        ->name('documents.ocr.update');
+
     Route::post('/documents/{id}/submit', [DocumentController::class, 'submit'])
         ->whereNumber('id')
         ->name('documents.submit');
@@ -76,11 +82,25 @@ Route::middleware(['auth', 'role:admin'])
             ->whereNumber('id')
             ->name('documents.reject');
 
+        // Library: kapal -> voyage -> klasifikasi
         Route::get('/library', [DocumentController::class, 'library'])
             ->name('admin.library');
 
+        Route::get('/library/{vessel}', [DocumentController::class, 'libraryVessel'])
+            ->where('vessel', '[A-Z0-9]+')
+            ->name('admin.library.vessel');
+
+        Route::get('/library/{vessel}/{voyage}', [DocumentController::class, 'libraryVoyage'])
+            ->where(['vessel' => '[A-Z0-9]+', 'voyage' => '[A-Z0-9]+'])
+            ->name('admin.library.voyage');
+
         Route::get('/monitoring', [DocumentController::class, 'monitoring'])
             ->name('admin.monitoring');
+
+        // UC-03: Kelola pengguna
+        Route::resource('users', UserController::class)
+            ->except('show')
+            ->names('admin.users');
     });
 
 // Profile
@@ -96,4 +116,4 @@ Route::middleware('auth')->group(function () {
         ->name('profile.destroy');
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

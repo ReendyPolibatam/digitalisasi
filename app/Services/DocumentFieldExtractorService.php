@@ -7,9 +7,9 @@ class DocumentFieldExtractorService
     public function extract(string $text): array
     {
         return [
-            'vessel_name'    => $this->extractVesselName($text),
-            'voyage'         => $this->extractVoyage($text),
-            'loading_date'   => $this->extractDate($text, [
+            'vessel_name' => $this->extractVesselName($text),
+            'voyage' => $this->extractVoyage($text),
+            'loading_date' => $this->extractDate($text, [
                 'loading commenced',
                 'date of loading',
                 'loading completed',
@@ -20,29 +20,91 @@ class DocumentFieldExtractorService
                 'discharge completed',
                 'date of discharge',
             ]),
-            'bl_liters_obs'  => $this->extractBlLitersObs($text),
-            'liters_15c'     => $this->extractLiters15C($text),
+            'bl_liters_obs' => $this->extractBlLitersObs($text),
+            'liters_15c' => $this->extractLiters15C($text),
         ];
     }
 
+    // Awalan kapal pengangkut muatan (tongkang, oil barge, tanker, dst.)
+    private const VESSEL_PREFIXES = 'SPOB|TKG|OB|MT|MV|KM|LCT|BG';
+
+    // Kapal tunda (tug boat): stempelnya ada di banyak halaman, tapi bukan kapal muatannya
+    private const TUG_PREFIXES = 'TB';
+
+    // Kata yang menandai akhir nama kapal (label kolom berikutnya di baris yang sama)
+    private const VESSEL_STOP_WORDS = 'PORT|NATIONALITY|VOYAGE|DATE|NO|FLAG|ARRIVED|SAILED|LOADING|DISCHARG\w*|MASTER|GRADE|CARGO|CONSIGN\w*|ON|AT|IN|HAS';
+
+    /**
+     * Nama kapal dari label ("Name of Vessel : ...") kalau terbaca, kalau tidak dari
+     * nama berawalan jenis kapal (OB, TKG, ...) yang paling sering muncul.
+     * Kapal tunda (TB) hanya dipakai kalau tidak ada nama kapal muatan sama sekali.
+     */
     private function extractVesselName(string $text): ?string
     {
-        $patterns = [
-            '/NAME OF VESSEL\s*[:\/]?\s*([A-Za-z0-9\.\-]+(?:\s+[A-Za-z0-9\.\-]+)*?)(?=\s+(?:PORT|NATIONALITY|VOYAGE|DATE|$))/i',
-            '/Vessel\s*[:\/]?\s*([A-Za-z0-9\.\-]+(?:\s+[A-Za-z0-9\.\-]+)*?)(?=\s+(?:PORT|NATIONALITY|VOYAGE|DATE|Order|No\.|$))/i',
-        ];
+        return $this->vesselFromLabel($text)
+            ?? $this->vesselFromPrefix($text, self::VESSEL_PREFIXES)
+            ?? $this->vesselFromPrefix($text, self::TUG_PREFIXES);
+    }
 
-        foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $text, $matches)) {
-                $name = trim($matches[1]);
+    private function vesselFromLabel(string $text): ?string
+    {
+        $label = '(?:name\W{0,3}s?\W{0,3}of\s+vessel|vessel\s+name|vessel(?:\s+no)?|to\s+the\s+master\s+of)';
 
-                if ($name !== '' && mb_strlen($name) < 50) {
-                    return $name;
-                }
+        preg_match_all('/'.$label.'\s*[:;]\s*(.+)$/im', $text, $matches);
+
+        foreach ($matches[1] as $value) {
+            $name = $this->cleanVesselName($value);
+
+            if ($name !== null) {
+                return $name;
             }
         }
 
         return null;
+    }
+
+    private function vesselFromPrefix(string $text, string $prefixes): ?string
+    {
+        // \h (bukan \s) supaya nama tidak menyambung ke baris berikutnya
+        preg_match_all(
+            '/\b(?:'.$prefixes.')[.,]?\h+(?:PT\.?\h+)?[A-Za-z]{3,}(?:\h+[A-Za-z]{3,}){0,3}/',
+            $text,
+            $matches
+        );
+
+        $names = collect($matches[0])
+            ->map(fn (string $value) => $this->cleanVesselName($value))
+            ->filter();
+
+        if ($names->isEmpty()) {
+            return null;
+        }
+
+        // Paling sering muncul menang; kalau seri, yang muncul lebih dulu
+        $counts = $names->countBy(fn (string $name) => preg_replace('/[^A-Z0-9]/', '', mb_strtoupper($name)));
+        $bestKey = $counts->sortDesc()->keys()->first();
+
+        return $names->first(fn (string $name) => preg_replace('/[^A-Z0-9]/', '', mb_strtoupper($name)) === $bestKey);
+    }
+
+    /**
+     * Potong nilai di label kolom berikutnya, rapikan, dan tolak hasil yang bukan nama.
+     */
+    private function cleanVesselName(string $value): ?string
+    {
+        $value = preg_split('/\s{2,}|\s[—–-]+\s|\s+(?:'.self::VESSEL_STOP_WORDS.')\b/i', trim($value))[0];
+        $value = trim($value, " \t.,:;-—–_|'\"");
+
+        // Salah baca OCR yang umum untuk awalan "OB": O8, 0B, O08, ...
+        $value = preg_replace('/^[O0]{1,2}[8B]\b/i', 'OB', $value);
+
+        $letters = preg_match_all('/[A-Za-z]/', $value);
+
+        if ($letters < 4 || mb_strlen($value) > 40 || ! preg_match('/[A-Za-z]{2,}/', $value)) {
+            return null;
+        }
+
+        return $value;
     }
 
     private function extractVoyage(string $text): ?string

@@ -3,13 +3,21 @@
 @section('content')
 
 <div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-800">
-        Detail Dokumen
-    </h1>
-    <p class="text-gray-500 mt-2">
-        Upload, OCR, dan klasifikasi dokumen shipping
-    </p>
+    <h1 class="text-3xl font-bold text-gray-800">Detail Dokumen</h1>
+    <p class="text-gray-500 mt-2">Upload, OCR, dan klasifikasi dokumen shipping</p>
 </div>
+
+@if(session('success'))
+    <div class="bg-green-100 border border-green-300 text-green-700 p-4 rounded-lg mb-6">
+        {{ session('success') }}
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="bg-red-100 border border-red-300 text-red-700 p-4 rounded-lg mb-6">
+        {{ session('error') }}
+    </div>
+@endif
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -17,15 +25,11 @@
     <div class="lg:col-span-2">
         <div class="bg-white rounded-xl shadow">
             <div class="border-b px-6 py-4">
-                <h2 class="font-semibold text-gray-700">
-                    Preview Dokumen
-                </h2>
+                <h2 class="font-semibold text-gray-700">Preview Dokumen</h2>
             </div>
 
             <div class="p-4">
-                @php
-                    $extension = pathinfo($document->file_name, PATHINFO_EXTENSION);
-                @endphp
+                @php $extension = pathinfo($document->file_name, PATHINFO_EXTENSION); @endphp
 
                 @if(strtolower($extension) == 'pdf')
                     <iframe
@@ -33,9 +37,8 @@
                         class="w-full h-[700px] rounded-lg border">
                     </iframe>
                 @else
-                    <img
-                        src="{{ asset('storage/' . $document->file_path) }}"
-                        class="w-full rounded-lg border">
+                    <img src="{{ asset('storage/' . $document->file_path) }}"
+                         class="w-full rounded-lg border">
                 @endif
             </div>
         </div>
@@ -45,9 +48,7 @@
     <div>
         <div class="bg-white rounded-xl shadow">
             <div class="border-b px-6 py-4">
-                <h2 class="font-semibold text-gray-700">
-                    Informasi Dokumen
-                </h2>
+                <h2 class="font-semibold text-gray-700">Informasi Dokumen</h2>
             </div>
 
             <div class="p-6 space-y-4">
@@ -61,21 +62,13 @@
                     <label class="text-sm text-gray-500">Status</label>
                     <p>
                         @if($document->status == 'approved')
-                            <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-                                Approved
-                            </span>
+                            <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">Approved</span>
                         @elseif($document->status == 'rejected')
-                            <span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm">
-                                Rejected
-                            </span>
+                            <span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm">Rejected</span>
                         @elseif($document->status == 'pending')
-                            <span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm">
-                                Menunggu Verifikasi
-                            </span>
+                            <span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm">Menunggu Verifikasi</span>
                         @else
-                            <span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
-                                Draft
-                            </span>
+                            <span class="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">Draft</span>
                         @endif
                     </p>
                 </div>
@@ -89,18 +82,19 @@
 
                 <div class="space-y-3">
 
-                    <form action="{{ route('documents.ocr', $document->id) }}" method="POST">
+                    <form action="{{ route('documents.ocr', $document->id) }}"
+                          method="POST"
+                          id="ocrForm">
                         @csrf
                         <button type="submit"
+                                id="ocrBtn"
                                 class="block w-full text-center bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg">
                             Proses OCR
                         </button>
                     </form>
 
                     @if($document->ocr_text)
-
                         @if($document->status == 'draft')
-
                             <form action="{{ route('documents.submit', $document->id) }}" method="POST">
                                 @csrf
                                 <button type="submit"
@@ -108,23 +102,17 @@
                                     Submit ke Admin
                                 </button>
                             </form>
-
                         @else
-
                             <button disabled
                                     class="block w-full text-center bg-gray-300 text-gray-500 py-3 rounded-lg cursor-not-allowed">
                                 Sudah Disubmit
                             </button>
-
                         @endif
-
                     @else
-
                         <button disabled
                                 class="block w-full text-center bg-gray-300 text-gray-500 py-3 rounded-lg cursor-not-allowed">
                             Submit ke Admin (Proses OCR Dahulu)
                         </button>
-
                     @endif
 
                 </div>
@@ -139,16 +127,12 @@
 <div class="mt-6">
     <div class="bg-white rounded-xl shadow">
         <div class="border-b px-6 py-4">
-            <h2 class="font-semibold text-gray-700">
-                Hasil OCR
-            </h2>
+            <h2 class="font-semibold text-gray-700">Hasil OCR</h2>
         </div>
 
         <div class="p-6">
             @if($document->ocr_text)
-                <textarea
-                    class="w-full border rounded-lg p-4 h-96"
-                    readonly>{{ $document->ocr_text }}</textarea>
+                <textarea class="w-full border rounded-lg p-4 h-96" readonly>{{ $document->ocr_text }}</textarea>
             @else
                 <div class="text-center py-10 text-gray-500">
                     OCR belum dijalankan
@@ -163,9 +147,7 @@
     <div class="bg-white rounded-xl shadow">
         <div class="border-b px-6 py-4 flex items-center justify-between">
 
-            <h2 class="font-semibold text-gray-700">
-                Hasil Klasifikasi
-            </h2>
+            <h2 class="font-semibold text-gray-700">Hasil Klasifikasi</h2>
 
             @if($document->category)
                 @php
@@ -200,9 +182,12 @@
 
                 <div class="bg-gray-50 rounded-lg p-4">
                     <label class="text-sm text-gray-500">Nama Kapal</label>
-                    <p class="font-medium text-gray-800 mt-1">
-                        {{ $document->vessel_name ?? '-' }}
-                    </p>
+                    <p class="font-medium text-gray-800 mt-1">{{ $document->vessel_name ?? '-' }}</p>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <label class="text-sm text-gray-500">Voyage</label>
+                    <p class="font-medium text-gray-800 mt-1">{{ $document->voyage ?? '-' }}</p>
                 </div>
 
                 <div class="bg-gray-50 rounded-lg p-4">
@@ -244,5 +229,62 @@
         </div>
     </div>
 </div>
+
+{{-- Loading Overlay --}}
+<div id="loadingOverlay"
+     class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+
+    <div class="bg-white rounded-2xl shadow-xl p-8 flex flex-col items-center gap-4 w-80">
+
+        <div class="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+
+        <div class="text-center">
+            <h3 class="text-lg font-semibold text-gray-800">Memproses OCR</h3>
+            <p class="text-sm text-gray-500 mt-1">Sedang membaca dan menganalisis dokumen...</p>
+            <p class="text-xs text-gray-400 mt-2">Proses ini bisa memakan waktu beberapa menit</p>
+        </div>
+
+        <div class="w-full bg-gray-200 rounded-full h-2">
+            <div id="progressBar"
+                 class="bg-purple-600 h-2 rounded-full transition-all duration-1000"
+                 style="width: 0%">
+            </div>
+        </div>
+
+        <p id="progressText" class="text-xs text-purple-600 font-medium">Memulai proses...</p>
+
+    </div>
+
+</div>
+
+<script>
+document.getElementById('ocrForm').addEventListener('submit', function() {
+    document.getElementById('loadingOverlay').classList.remove('hidden');
+
+    const bar  = document.getElementById('progressBar');
+    const text = document.getElementById('progressText');
+
+    const steps = [
+        { pct: 10, msg: 'Mengkonversi PDF ke gambar...' },
+        { pct: 25, msg: 'Membaca halaman dokumen...' },
+        { pct: 45, msg: 'Menganalisis teks OCR...' },
+        { pct: 65, msg: 'Mengklasifikasikan dokumen...' },
+        { pct: 80, msg: 'Mengekstrak data penting...' },
+        { pct: 95, msg: 'Menyimpan hasil...' },
+    ];
+
+    let i = 0;
+
+    const interval = setInterval(function() {
+        if (i < steps.length) {
+            bar.style.width  = steps[i].pct + '%';
+            text.textContent = steps[i].msg;
+            i++;
+        } else {
+            clearInterval(interval);
+        }
+    }, 4000);
+});
+</script>
 
 @endsection

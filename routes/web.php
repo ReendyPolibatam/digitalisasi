@@ -1,20 +1,27 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DocumentController;
 
-// Landing page
+// Landing page: belum login -> login, sudah login -> dashboard sesuai role
 Route::get('/', function () {
-    if (auth()->check()) {
-        if (auth()->user()->role === 'admin') {
-            return redirect()->route('admin.dashboard');
-        }
-        return redirect()->route('staff.dashboard');
+    if (Auth::check()) {
+        return redirect()->route(
+            Auth::user()->role === 'admin' ? 'admin.dashboard' : 'staff.dashboard'
+        );
     }
 
-    return view('welcome');
+    return redirect()->route('login');
 });
+
+// Route 'dashboard' bawaan Breeze (dipakai setelah login/verifikasi email)
+Route::get('/dashboard', function () {
+    return redirect()->route(
+        Auth::user()->role === 'admin' ? 'admin.dashboard' : 'staff.dashboard'
+    );
+})->middleware('auth')->name('dashboard');
 
 // Staff routes
 Route::middleware(['auth', 'role:staff'])->group(function () {
@@ -29,17 +36,20 @@ Route::middleware(['auth', 'role:staff'])->group(function () {
     ]);
 
     Route::get('/documents/{id}/download', [DocumentController::class, 'download'])
+        ->whereNumber('id')
         ->name('documents.download');
 
     Route::post('/documents/{id}/ocr', [DocumentController::class, 'processOCR'])
+        ->whereNumber('id')
         ->name('documents.ocr');
 
     Route::post('/documents/{id}/submit', [DocumentController::class, 'submit'])
+        ->whereNumber('id')
         ->name('documents.submit');
 
     Route::get('/documents/{id}', [DocumentController::class, 'show'])
+        ->whereNumber('id')
         ->name('documents.show');
-
 });
 
 // Admin routes
@@ -54,12 +64,16 @@ Route::middleware(['auth', 'role:admin'])
             ->name('admin.documents');
 
         Route::get('/documents/{id}', [DocumentController::class, 'showDocument'])
+            ->whereNumber('id')
             ->name('admin.documents.show');
 
-        Route::get('/documents/{id}/approve', [DocumentController::class, 'approve'])
+        // Aksi yang mengubah data harus POST, bukan GET
+        Route::post('/documents/{id}/approve', [DocumentController::class, 'approve'])
+            ->whereNumber('id')
             ->name('documents.approve');
 
-        Route::get('/documents/{id}/reject', [DocumentController::class, 'reject'])
+        Route::post('/documents/{id}/reject', [DocumentController::class, 'reject'])
+            ->whereNumber('id')
             ->name('documents.reject');
 
         Route::get('/library', [DocumentController::class, 'library'])

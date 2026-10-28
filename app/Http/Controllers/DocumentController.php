@@ -18,8 +18,8 @@ class DocumentController extends Controller
     {
         $userId = Auth::id();
 
-        $total = Document::where('user_id', $userId)->count();
-        $pending = Document::where('user_id', $userId)->where('status', 'pending')->count();
+        $total    = Document::where('user_id', $userId)->count();
+        $pending  = Document::where('user_id', $userId)->where('status', 'pending')->count();
         $approved = Document::where('user_id', $userId)->where('status', 'approved')->count();
         $rejected = Document::where('user_id', $userId)->where('status', 'rejected')->count();
 
@@ -59,7 +59,7 @@ class DocumentController extends Controller
         $file = $request->file('file');
         $path = $file->store('documents', 'public');
 
-        Document::create([
+        $document = Document::create([
             'file_name'  => $file->getClientOriginalName(),
             'file_path'  => $path,
             'status'     => 'draft',
@@ -72,7 +72,7 @@ class DocumentController extends Controller
         ]);
 
         return redirect()
-            ->route('documents.index')
+            ->route('documents.show', $document->id)
             ->with('success', 'Dokumen berhasil diupload. Silakan lanjut proses OCR.');
     }
 
@@ -104,7 +104,7 @@ class DocumentController extends Controller
 
     public function processOCR($id)
     {
-        set_time_limit(300);    
+        set_time_limit(300);
 
         $document = Document::findOrFail($id);
 
@@ -120,7 +120,7 @@ class DocumentController extends Controller
         }
 
         $outputPrefix = $tempDir . '/page';
-        $popplerPath = 'C:\poppler\Library\bin\pdftoppm.exe';
+        $popplerPath  = 'C:\poppler\Library\bin\pdftoppm.exe';
 
         $command = "\"$popplerPath\" -png -r 200 \"$pdfPath\" \"$outputPrefix\"";
         shell_exec($command);
@@ -142,19 +142,18 @@ class DocumentController extends Controller
 
         @rmdir($tempDir);
 
-        $ocrText = $fullText;
-
-        $classifier = new DocumentClassifierService();
-        $classification = $classifier->classify($ocrText);
+        $classifier     = new DocumentClassifierService();
+        $classification = $classifier->classify($fullText);
 
         $extractor = new DocumentFieldExtractorService();
-        $extracted = $extractor->extract($ocrText);
+        $extracted = $extractor->extract($fullText);
 
         $document->update([
-            'ocr_text'         => $ocrText,
+            'ocr_text'         => $fullText,
             'category'         => $classification['category'],
             'confidence_score' => $classification['confidence'],
             'vessel_name'      => $extracted['vessel_name'],
+            'voyage'           => $extracted['voyage'],
             'loading_date'     => $extracted['loading_date'],
             'discharge_date'   => $extracted['discharge_date'],
             'bl_liters_obs'    => $extracted['bl_liters_obs'],
@@ -176,9 +175,7 @@ class DocumentController extends Controller
             return back()->with('error', 'Dokumen harus diproses OCR sebelum disubmit ke admin.');
         }
 
-        $document->update([
-            'status' => 'pending',
-        ]);
+        $document->update(['status' => 'pending']);
 
         return back()->with('success', 'Dokumen berhasil disubmit ke admin untuk verifikasi.');
     }
@@ -187,8 +184,8 @@ class DocumentController extends Controller
 
     public function adminDashboard()
     {
-        $total = Document::whereIn('status', ['pending', 'approved', 'rejected'])->count();
-        $pending = Document::where('status', 'pending')->count();
+        $total    = Document::whereIn('status', ['pending', 'approved', 'rejected'])->count();
+        $pending  = Document::where('status', 'pending')->count();
         $approved = Document::where('status', 'approved')->count();
         $rejected = Document::where('status', 'rejected')->count();
 
@@ -254,11 +251,39 @@ class DocumentController extends Controller
 
     public function library()
     {
-        $ships = collect([
-            (object) ['ship_name' => 'MT RISKITA', 'voyage' => '010/RISKITA/PL/B40/V/2026', 'total_documents' => 3],
-            (object) ['ship_name' => 'MT MERATUS', 'voyage' => '011/MERATUS/PL/B41/V/2026', 'total_documents' => 3],
-            (object) ['ship_name' => 'SPOB ANUGERAH', 'voyage' => '012/ANUGERAH/PL/B42/V/2026', 'total_documents' => 3],
-        ]);
+        $documents = Document::whereIn('status', ['pending', 'approved', 'rejected'])
+            ->whereNotNull('vessel_name')
+            ->get();
+
+        $ships = $documents
+            ->groupBy(function ($doc) {
+                return Document::normalizeVesselName($doc->vessel_name) . '|' . ($doc->voyage ?? 'NOVOYAGE');
+            })
+            ->map(function ($group) {
+                $first = $group->first();
+
+                $categoryLabels = [
+                    'invoice'   => 'Invoice',
+                    'loading'   => 'Loading',
+                    'unloading' => 'Bongkar',
+                ];
+
+                $categories = $group
+                    ->pluck('category')
+                    ->filter()
+                    ->map(fn ($cat) => $categoryLabels[$cat] ?? $cat)
+                    ->unique()
+                    ->values();
+
+                return (object) [
+                    'ship_name'       => $first->vessel_name,
+                    'voyage'          => $first->voyage ?? '-',
+                    'total_documents' => $group->count(),
+                    'categories'      => $categories,
+                    'document_ids'    => $group->pluck('id'),
+                ];
+            })
+            ->values();
 
         return view('admin.library', compact('ships'));
     }
@@ -266,9 +291,56 @@ class DocumentController extends Controller
     public function monitoring()
     {
         $documents = Document::whereIn('status', ['pending', 'approved', 'rejected'])
-            ->latest()
-            ->paginate(10);
+            ->whereNotNull('vessel_name')
+            ->with('user')
+            ->get();
 
-        return view('admin.monitoring', compact('documents'));
+        $total    = $documents->count();
+        $pending  = $documents->where('status', 'pending')->count();
+        $approved = $documents->where('status', 'approved')->count();
+        $rejected = $documents->where('status', 'rejected')->count();
+
+        $categoryLabels = [
+            'invoice'   => 'Invoice',
+            'loading'   => 'Loading',
+            'unloading' => 'Bongkar',
+        ];
+
+        $ships = $documents
+            ->groupBy(function ($doc) {
+                return Document::normalizeVesselName($doc->vessel_name) . '|' . ($doc->voyage ?? 'NOVOYAGE');
+            })
+            ->map(function ($group) use ($categoryLabels) {
+                $first = $group->first();
+
+                $categories = $group
+                    ->pluck('category')
+                    ->filter()
+                    ->map(fn ($cat) => $categoryLabels[$cat] ?? $cat)
+                    ->unique()
+                    ->values();
+
+                return (object) [
+                    'ship_name'       => $first->vessel_name,
+                    'voyage'          => $first->voyage ?? '-',
+                    'total_documents' => $group->count(),
+                    'categories'      => $categories,
+                    'pending'         => $group->where('status', 'pending')->count(),
+                    'approved'        => $group->where('status', 'approved')->count(),
+                    'rejected'        => $group->where('status', 'rejected')->count(),
+                    'documents'       => $group->map(fn ($d) => (object) [
+                        'id'         => $d->id,
+                        'file_name'  => $d->file_name,
+                        'status'     => $d->status,
+                        'uploader'   => $d->user->name ?? '-',
+                        'created_at' => $d->created_at,
+                    ]),
+                ];
+            })
+            ->values();
+
+        return view('admin.monitoring', compact(
+            'ships', 'total', 'pending', 'approved', 'rejected'
+        ));
     }
 }

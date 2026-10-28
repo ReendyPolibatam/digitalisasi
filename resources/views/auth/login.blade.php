@@ -1,15 +1,33 @@
-<x-guest-layout>
-    <div class="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-        
-        <div class="w-full max-w-md bg-white shadow-xl rounded-2xl p-8">
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Login - Digitalisasi Dokumen</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+</head>
+<body class="min-h-screen bg-[#17607a] flex items-center justify-center p-6">
+
+    <div class="w-full max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden grid grid-cols-1 md:grid-cols-2">
+
+        {{-- Kiri: gambar pelayaran --}}
+        <div class="hidden md:block relative min-h-[480px] bg-[#17607a]">
+            <img src="{{ asset('images/pelayaran.jpg') }}"
+                 alt="Kapal kontainer di pelabuhan"
+                 class="absolute inset-0 w-full h-full object-cover object-[35%_center]">
+            <div class="absolute inset-0 bg-[#17607a]/20"></div>
+        </div>
+
+        {{-- Kanan: form login --}}
+        <div class="bg-[#d2dee3] p-8 md:p-10 flex flex-col justify-center">
 
             <!-- Title -->
-            <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-blue-600">
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-[#17607a]">
                     Digitalisasi Dokumen
                 </h1>
-
-                <p class="text-gray-500 mt-2">
+                <p class="text-gray-600 mt-1 text-sm">
                     Silakan login untuk melanjutkan
                 </p>
             </div>
@@ -23,73 +41,82 @@
 
                 <!-- Email -->
                 <div class="mb-5">
-                    <label class="block mb-2 text-sm font-semibold text-gray-700">
+                    <label for="email" class="block mb-2 text-sm font-semibold text-gray-700">
                         Email
                     </label>
 
-                    <input 
+                    <input
+                        id="email"
                         type="email"
                         name="email"
                         value="{{ old('email') }}"
                         required
                         autofocus
-                        class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        autocomplete="username"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#17607a] focus:border-[#17607a] focus:outline-none"
                         placeholder="Masukkan email"
                     >
 
                     @error('email')
-                        <p class="text-red-500 text-sm mt-1">
-                            {{ $message }}
-                        </p>
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <!-- Password -->
                 <div class="mb-5">
-                    <label class="block mb-2 text-sm font-semibold text-gray-700">
+                    <label for="password" class="block mb-2 text-sm font-semibold text-gray-700">
                         Password
                     </label>
 
-                    <input 
+                    <input
+                        id="password"
                         type="password"
                         name="password"
                         required
-                        class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        autocomplete="current-password"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#17607a] focus:border-[#17607a] focus:outline-none"
                         placeholder="Masukkan password"
                     >
 
                     @error('password')
-                        <p class="text-red-500 text-sm mt-1">
-                            {{ $message }}
-                        </p>
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <!-- Remember -->
-                <div class="flex items-center justify-between mb-6">
-                    <label class="flex items-center gap-2 text-sm text-gray-600">
-                        <input type="checkbox" name="remember">
+                <div class="mb-6">
+                    <label for="remember" class="flex items-center gap-2 text-sm text-gray-600">
+                        <input id="remember" type="checkbox" name="remember"
+                               class="rounded border-gray-300 text-[#17607a] focus:ring-[#17607a]">
                         Remember me
                     </label>
-
-                    @if (Route::has('password.request'))
-                        <a href="{{ route('password.request') }}" 
-                           class="text-sm text-blue-600 hover:underline">
-                            Lupa Password?
-                        </a>
-                    @endif
                 </div>
 
                 <!-- Button -->
-                <button 
+                <button
                     type="submit"
-                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition duration-200"
+                    class="w-full bg-[#17607a] hover:bg-[#124c61] text-white font-semibold py-3 rounded-xl transition duration-200"
                 >
                     Login
                 </button>
+
+                <!-- Lupa password & Register -->
+                <div class="flex items-center justify-between text-sm mt-5">
+                    @if (Route::has('password.request'))
+                        <a href="{{ route('password.request') }}" class="text-[#17607a] hover:underline">
+                            Lupa Password?
+                        </a>
+                    @endif
+
+                    @if (Route::has('register'))
+                        <a href="{{ route('register') }}" class="text-[#17607a] hover:underline">
+                            Register
+                        </a>
+                    @endif
+                </div>
             </form>
-
         </div>
-
     </div>
-</x-guest-layout>
+
+</body>
+</html>

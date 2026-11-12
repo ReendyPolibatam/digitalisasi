@@ -17,6 +17,9 @@ use Illuminate\Support\Str;
 class DocumentController extends Controller
 {
     // Status dokumen yang sudah masuk ke admin (bukan draft)
+    // Batas selisih tanggal agar dokumen tanpa nomor voyage masuk ke voyage yang sama
+    private const VOYAGE_MATCH_DAYS = 10;
+
     private const SUBMITTED_STATUSES = ['pending', 'approved', 'rejected'];
 
     private const CATEGORY_LABELS = [
@@ -54,7 +57,7 @@ class DocumentController extends Controller
             ->filter(fn ($d) => empty($d->ocr_text))
             ->values();
 
-        $processed = $documents->reject(fn ($d) => empty($d->ocr_text));
+        $processed = $this->assignVoyageKeys($documents->reject(fn ($d) => empty($d->ocr_text)));
 
         // Satu kartu per kapal (nama dinormalisasi), voyage ditampilkan di dalam kartu
         $ships = $processed
@@ -69,8 +72,8 @@ class DocumentController extends Controller
                 $detected = $key !== 'TIDAK_TERDETEKSI';
 
                 $voyages = $group
-                    ->filter(fn ($d) => $this->voyageKey($d->voyage) !== 'NOVOYAGE')
-                    ->groupBy(fn ($d) => $this->voyageKey($d->voyage))
+                    ->filter(fn ($d) => $d->voyage_key !== 'NOVOYAGE')
+                    ->groupBy(fn ($d) => $d->voyage_key)
                     ->map(fn ($g) => $this->displayVoyage($g))
                     ->values();
 
@@ -334,7 +337,7 @@ class DocumentController extends Controller
             ->map(fn ($group, $key) => (object) [
                 'key' => $key,
                 'vessel_name' => $this->displayVesselName($group),
-                'total_voyages' => $group->groupBy(fn ($d) => $this->voyageKey($d->voyage))->count(),
+                'total_voyages' => $group->groupBy(fn ($d) => $d->voyage_key)->count(),
                 'total_documents' => $group->count(),
             ])
             ->sortBy('vessel_name')
@@ -348,7 +351,7 @@ class DocumentController extends Controller
         $documents = $this->vesselDocuments($vessel);
 
         $voyages = $documents
-            ->groupBy(fn ($d) => $this->voyageKey($d->voyage))
+            ->groupBy(fn ($d) => $d->voyage_key)
             ->map(fn ($group, $key) => (object) [
                 'key' => $key,
                 'voyage' => $this->displayVoyage($group),
@@ -371,7 +374,7 @@ class DocumentController extends Controller
         $vesselDocs = $this->vesselDocuments($vessel);
 
         $documents = $vesselDocs
-            ->filter(fn ($d) => $this->voyageKey($d->voyage) === $voyage)
+            ->filter(fn ($d) => $d->voyage_key === $voyage)
             ->values();
 
         abort_if($documents->isEmpty(), 404);
@@ -421,8 +424,8 @@ class DocumentController extends Controller
 
                 // Daftar voyage unik (dokumen tanpa voyage tidak dihitung)
                 $voyages = $group
-                    ->filter(fn ($d) => $this->voyageKey($d->voyage) !== 'NOVOYAGE')
-                    ->groupBy(fn ($d) => $this->voyageKey($d->voyage))
+                    ->filter(fn ($d) => $d->voyage_key !== 'NOVOYAGE')
+                    ->groupBy(fn ($d) => $d->voyage_key)
                     ->map(fn ($g) => $this->displayVoyage($g))
                     ->values();
 
@@ -646,12 +649,77 @@ class DocumentController extends Controller
      */
     private function libraryDocuments(): Collection
     {
-        return Document::with('user')
+        return $this->assignVoyageKeys(Document::with('user')
             ->whereIn('status', self::SUBMITTED_STATUSES)
             ->whereNotNull('vessel_name')
             ->get()
             ->filter(fn ($d) => Document::normalizeVesselName($d->vessel_name) !== '')
-            ->values();
+            ->values());
+    }
+
+    /**
+     * Isi voyage_key setiap dokumen untuk pengelompokan per voyage.
+     *
+     * Dokumen tanpa nomor voyage (misalnya invoice) dimasukkan ke voyage kapal yang sama
+     * yang tanggalnya paling dekat, selama selisihnya paling lama VOYAGE_MATCH_DAYS hari.
+     * Tanggal diambil dari tanggal loading/bongkar dan semua tanggal yang tertulis di teks OCR.
+     */
+    private function assignVoyageKeys(Collection $documents): Collection
+    {
+        $extractor = new DocumentFieldExtractorService;
+
+        $dates = function (Document $d) use ($extractor): array {
+            $list = $extractor->documentDates((string) ($d->ocr_text_edited ?: $d->ocr_text));
+            foreach ([$d->loading_date, $d->discharge_date] as $date) {
+                if ($date) {
+                    $list[] = $date->format('Y-m-d');
+                }
+            }
+
+            return array_map(fn ($x) => (int) (strtotime($x) / 86400), array_unique($list));
+        };
+
+        foreach ($documents as $d) {
+            $d->voyage_key = $this->voyageKey($d->voyage);
+            $d->voyage_inferred = false;
+        }
+
+        // tanggal setiap voyage, per kapal
+        $anchors = [];
+        foreach ($documents as $d) {
+            if ($d->voyage_key !== 'NOVOYAGE') {
+                $vessel = Document::normalizeVesselName($d->vessel_name);
+                $anchors[$vessel][$d->voyage_key] = array_merge($anchors[$vessel][$d->voyage_key] ?? [], $dates($d));
+            }
+        }
+
+        foreach ($documents as $d) {
+            $vessel = Document::normalizeVesselName($d->vessel_name);
+            if ($d->voyage_key !== 'NOVOYAGE' || empty($anchors[$vessel])) {
+                continue;
+            }
+
+            $own = $dates($d);
+            $best = null;
+            $bestGap = PHP_INT_MAX;
+            foreach ($anchors[$vessel] as $key => $voyageDates) {
+                foreach ($own as $a) {
+                    foreach ($voyageDates as $b) {
+                        if (abs($a - $b) < $bestGap) {
+                            $bestGap = abs($a - $b);
+                            $best = $key;
+                        }
+                    }
+                }
+            }
+
+            if ($best !== null && $bestGap <= self::VOYAGE_MATCH_DAYS) {
+                $d->voyage_key = $best;
+                $d->voyage_inferred = true;
+            }
+        }
+
+        return $documents;
     }
 
     /**

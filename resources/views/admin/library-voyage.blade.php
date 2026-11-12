@@ -39,6 +39,9 @@
                         <p class="font-medium text-gray-800 truncate">{{ $doc->file_name }}</p>
                         <p class="text-xs text-gray-500">
                             {{ $doc->user->name ?? '-' }} · {{ $doc->created_at->format('d M Y H:i') }}
+                            @if($doc->voyage_inferred)
+                                · <span class="text-amber-600">voyage ditentukan dari tanggal dokumen</span>
+                            @endif
                         </p>
                     </div>
 
@@ -89,6 +92,9 @@
                         <p class="font-medium text-gray-800 truncate">{{ $doc->file_name }}</p>
                         <p class="text-xs text-gray-500">
                             {{ $doc->user->name ?? '-' }} · {{ $doc->created_at->format('d M Y H:i') }}
+                            @if($doc->voyage_inferred)
+                                · <span class="text-amber-600">voyage ditentukan dari tanggal dokumen</span>
+                            @endif
                         </p>
                     </div>
 

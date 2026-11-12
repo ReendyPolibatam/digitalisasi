@@ -32,7 +32,7 @@ class DocumentFieldExtractorService
     private const TUG_PREFIXES = 'TB';
 
     // Kata yang menandai akhir nama kapal (label kolom berikutnya di baris yang sama)
-    private const VESSEL_STOP_WORDS = 'PORT|NATIONALITY|VOYAGE|DATE|NO|FLAG|ARRIVED|SAILED|LOADING|DISCHARG\w*|MASTER|GRADE|CARGO|CONSIGN\w*|ON|AT|IN|HAS';
+    private const VESSEL_STOP_WORDS = 'PORT|NATIONALITY|VOYAGE|DATE|NO|FLAG|ARRIVED|SAILED|LOADING|DISCHARG\w*|MASTER|GRADE|CARGO|CONSIGN\w*|ORDER|ON|AT|IN|HAS';
 
     /**
      * Nama kapal dari label ("Name of Vessel : ...") kalau terbaca, kalau tidak dari
@@ -125,6 +125,40 @@ class DocumentFieldExtractorService
         }
 
         return null;
+    }
+
+    /**
+     * Semua tanggal yang tertulis di teks (format Y-m-d, unik), dari format seperti
+     * "31-May-2026", "30-May-26", "31/05/2026", "31 May 2026", dan "May 31, 2026".
+     *
+     * @return list<string>
+     */
+    public function documentDates(string $text): array
+    {
+        $month = 'jan|feb|mar|apr|may|mei|jun|jul|aug|agu|sep|oct|okt|nov|dec|des';
+        $found = [];
+
+        preg_match_all('/\b(\d{1,2})[\-\/ ]('.$month.')[a-z]*\.?[\-\/ ,]+(\d{2}|\d{4})\b/i', $text, $m, PREG_SET_ORDER);
+        foreach ($m as $x) {
+            $found[] = $this->normalizeDate($x[1], $x[2], $this->fullYear($x[3]));
+        }
+
+        preg_match_all('/\b('.$month.')[a-z]*\.? (\d{1,2}),? (\d{4})\b/i', $text, $m, PREG_SET_ORDER);
+        foreach ($m as $x) {
+            $found[] = $this->normalizeDate($x[2], $x[1], $x[3]);
+        }
+
+        preg_match_all('/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/', $text, $m, PREG_SET_ORDER);
+        foreach ($m as $x) {
+            $found[] = $this->normalizeDate($x[1], $x[2], $x[3]);
+        }
+
+        return array_values(array_unique(array_filter($found, fn ($d) => $d !== null && checkdate((int) substr($d, 5, 2), (int) substr($d, 8, 2), (int) substr($d, 0, 4)))));
+    }
+
+    private function fullYear(string $year): string
+    {
+        return strlen($year) === 2 ? '20'.$year : $year;
     }
 
     private function extractDate(string $text, array $keywords): ?string

@@ -36,7 +36,7 @@
             <x-auth-session-status class="mb-4" :status="session('status')" />
 
             <!-- Form -->
-            <form method="POST" action="{{ route('login') }}">
+            <form method="POST" action="{{ route('login') }}" autocomplete="off">
                 @csrf
 
                 <!-- Email -->
@@ -51,8 +51,8 @@
                         name="email"
                         value="{{ old('email') }}"
                         required
-                        autofocus
-                        autocomplete="username"
+                        autocomplete="off"
+                        data-no-autofill
                         class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#17607a] focus:border-[#17607a] focus:outline-none"
                         placeholder="Masukkan email"
                     >
@@ -73,7 +73,8 @@
                         type="password"
                         name="password"
                         required
-                        autocomplete="current-password"
+                        autocomplete="new-password"
+                        data-no-autofill
                         class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#17607a] focus:border-[#17607a] focus:outline-none"
                         placeholder="Masukkan password"
                     >
@@ -103,5 +104,20 @@
         </div>
     </div>
 
+
+<script>
+// Kolom tetap kosong setelah login/register: browser tidak boleh mengisi otomatis akun yang tersimpan.
+// Field dibuat readonly sampai diklik (Chrome tidak mengisi field readonly), lalu nilainya
+// dikembalikan ke isi dari server (kosong, atau email yang salah saat validasi gagal).
+document.querySelectorAll('[data-no-autofill]').forEach(function (el) {
+    var initial = el.getAttribute('value') || '';
+    el.setAttribute('readonly', 'readonly');
+    var unlock = function () { el.removeAttribute('readonly'); };
+    el.addEventListener('focus', unlock);
+    el.addEventListener('pointerdown', unlock);
+    var reset = function () { if (el.hasAttribute('readonly')) { el.value = initial; } };
+    window.addEventListener('pageshow', function () { reset(); setTimeout(reset, 300); setTimeout(reset, 1000); });
+});
+</script>
 </body>
 </html>

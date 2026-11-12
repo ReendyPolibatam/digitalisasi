@@ -27,7 +27,7 @@
                 <p class="text-gray-600 mt-1 text-sm">Buat akun Digitalisasi Dokumen</p>
             </div>
 
-            <form method="POST" action="{{ route('register') }}">
+            <form method="POST" action="{{ route('register') }}" autocomplete="off">
                 @csrf
 
                 <!-- Nama -->
@@ -46,7 +46,7 @@
                 <div class="mb-5">
                     <label for="email" class="block mb-2 text-sm font-semibold text-gray-700">Email</label>
                     <input id="email" type="email" name="email" value="{{ old('email') }}"
-                           required autocomplete="username"
+                           required autocomplete="off" data-no-autofill
                            placeholder="Masukkan email"
                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#17607a] focus:border-[#17607a] focus:outline-none">
                     @error('email')
@@ -58,7 +58,7 @@
                 <div class="mb-5">
                     <label for="password" class="block mb-2 text-sm font-semibold text-gray-700">Password</label>
                     <input id="password" type="password" name="password"
-                           required autocomplete="new-password"
+                           required autocomplete="new-password" data-no-autofill
                            placeholder="Masukkan password"
                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#17607a] focus:border-[#17607a] focus:outline-none">
                     @error('password')
@@ -70,7 +70,7 @@
                 <div class="mb-5">
                     <label for="password_confirmation" class="block mb-2 text-sm font-semibold text-gray-700">Konfirmasi password</label>
                     <input id="password_confirmation" type="password" name="password_confirmation"
-                           required autocomplete="new-password"
+                           required autocomplete="new-password" data-no-autofill
                            placeholder="Ulangi password"
                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#17607a] focus:border-[#17607a] focus:outline-none">
                     @error('password_confirmation')
@@ -106,5 +106,20 @@
         </div>
     </div>
 
+
+<script>
+// Kolom tetap kosong setelah login/register: browser tidak boleh mengisi otomatis akun yang tersimpan.
+// Field dibuat readonly sampai diklik (Chrome tidak mengisi field readonly), lalu nilainya
+// dikembalikan ke isi dari server (kosong, atau email yang salah saat validasi gagal).
+document.querySelectorAll('[data-no-autofill]').forEach(function (el) {
+    var initial = el.getAttribute('value') || '';
+    el.setAttribute('readonly', 'readonly');
+    var unlock = function () { el.removeAttribute('readonly'); };
+    el.addEventListener('focus', unlock);
+    el.addEventListener('pointerdown', unlock);
+    var reset = function () { if (el.hasAttribute('readonly')) { el.value = initial; } };
+    window.addEventListener('pageshow', function () { reset(); setTimeout(reset, 300); setTimeout(reset, 1000); });
+});
+</script>
 </body>
 </html>
